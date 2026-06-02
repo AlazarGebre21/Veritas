@@ -16,6 +16,7 @@ import { ROUTES } from "@/config/routes.js";
 // ── Lazy page imports ────────────────────────────────────────────────────────
 
 // Public
+const LandingPage = lazy(() => import("@/roles/public/pages/LandingPage.jsx"));
 const LoginPage = lazy(() => import("@/roles/auth/pages/LoginPage.jsx"));
 const RegisterPage = lazy(() => import("@/roles/auth/pages/RegisterPage.jsx"));
 const ForgotPasswordPage = lazy(() => import("@/roles/auth/pages/ForgotPasswordPage.jsx"));
@@ -123,6 +124,8 @@ function Page({ children }) {
 
 // ── Router ───────────────────────────────────────────────────────────────────
 export const router = createBrowserRouter([
+  { path: ROUTES.HOME, element: <Page><LandingPage /></Page> },
+  
   // ── Public routes ──────────────────────────────────────────────────────
   {
     element: <PublicLayout />,
