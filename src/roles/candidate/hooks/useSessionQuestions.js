@@ -47,6 +47,7 @@ export function useSessionQuestions(sessionId) {
         ...q,
         decodedSnapshot: decodeSnapshot(q.questionSnapshot),
       }));
+      console.log("[useSessionQuestions] decoded questions:", questions);
       return { data: questions };
     },
     enabled: !!sessionId,

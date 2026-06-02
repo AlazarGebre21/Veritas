@@ -13,6 +13,7 @@ export default function TokenEntryForm({ onSubmit, isLoading, error }) {
     e.preventDefault();
     const trimmed = code.trim();
     if (!trimmed) return;
+    document.documentElement.requestFullscreen?.().catch(() => {});
     onSubmit(trimmed);
   }
 

@@ -1,18 +1,12 @@
 import ExamTimer from "./ExamTimer.jsx";
 import { Type, Minus, Plus, Clock } from "lucide-react";
-import { useState } from "react";
 
 /**
  * Exam session header bar with exam title, timer, and font size controls.
  *
- * @param {{ examTitle: string, expiresAt: string, onExpire: () => void }} props
+ * @param {{ examTitle: string, expiresAt: string, onExpire: () => void, fontScale: number, onAdjustFont: (delta: number) => void }} props
  */
-export default function ExamHeader({ examTitle, expiresAt, onExpire, children }) {
-  const [fontScale, setFontScale] = useState(100);
-
-  function adjustFont(delta) {
-    setFontScale((prev) => Math.min(150, Math.max(75, prev + delta)));
-  }
+export default function ExamHeader({ examTitle, expiresAt, onExpire, fontScale = 100, onAdjustFont, children }) {
 
   // Expose font scale via CSS custom property on the header's parent
   // Components below can read --exam-font-scale if needed
@@ -22,7 +16,6 @@ export default function ExamHeader({ examTitle, expiresAt, onExpire, children })
         sticky top-0 z-30 flex items-center justify-between
         px-5 py-3 bg-white border-b border-whisper
       "
-      style={{ "--exam-font-scale": `${fontScale}%` }}
     >
       {/* Left: Logo & Exam title */}
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -49,7 +42,7 @@ export default function ExamHeader({ examTitle, expiresAt, onExpire, children })
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => adjustFont(-10)}
+            onClick={() => onAdjustFont?.(-10)}
             disabled={fontScale <= 75}
             title="Decrease font size"
             className="p-1.5 rounded-micro text-warm-gray-400 hover:text-notion-black hover:bg-warm-white transition-colors disabled:opacity-30"
@@ -62,7 +55,7 @@ export default function ExamHeader({ examTitle, expiresAt, onExpire, children })
           </span>
           <button
             type="button"
-            onClick={() => adjustFont(10)}
+            onClick={() => onAdjustFont?.(10)}
             disabled={fontScale >= 150}
             title="Increase font size"
             className="p-1.5 rounded-micro text-warm-gray-400 hover:text-notion-black hover:bg-warm-white transition-colors disabled:opacity-30"

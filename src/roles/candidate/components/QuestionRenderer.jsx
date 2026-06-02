@@ -27,7 +27,7 @@ export default function QuestionRenderer({ question, answer, onAnswer, onFlag, i
   const negPoints = question.negativePoints || 0;
 
   return (
-    <div className="space-y-5" style={{ fontSize: "var(--exam-font-scale, 100%)" }}>
+    <div className="space-y-5" style={{ zoom: "var(--exam-font-scale, 100%)" }}>
       {/* Question header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
@@ -44,6 +44,24 @@ export default function QuestionRenderer({ question, answer, onAnswer, onFlag, i
             <span className="text-[11px] text-warm-gray-400 capitalize">{questionType}</span>
           </div>
           <p className="text-[15px] text-notion-black leading-relaxed">{questionText}</p>
+          {snap.mediaUrl && (
+            /\.(jpe?g|png|gif|webp|svg|avif)(\?|$)/i.test(snap.mediaUrl) ? (
+              <img
+                src={snap.mediaUrl}
+                alt="Question media"
+                className="mt-3 max-h-64 max-w-full rounded border border-gray-100 object-contain bg-gray-50"
+              />
+            ) : (
+              <a
+                href={snap.mediaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 text-[13px] text-notion-blue hover:underline"
+              >
+                View attachment
+              </a>
+            )
+          )}
         </div>
 
         {/* Flag button */}

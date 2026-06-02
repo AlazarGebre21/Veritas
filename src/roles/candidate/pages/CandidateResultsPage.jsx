@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useCandidateResult } from "../hooks/useCandidateResult.js";
 import { useExamSessionStore } from "@/stores/examSessionStore.js";
 import { Skeleton } from "@/components/ui/index.js";
@@ -10,7 +10,6 @@ import { CheckCircle2, Clock, LogOut } from "lucide-react";
  */
 export default function CandidateResultsPage() {
   const { sessionId } = useParams();
-  const navigate = useNavigate();
   const clearSession = useExamSessionStore((s) => s.clearSession);
 
   const { data, isLoading, isError } = useCandidateResult(sessionId);
@@ -19,7 +18,7 @@ export default function CandidateResultsPage() {
 
   function handleExit() {
     clearSession();
-    navigate("/exam", { replace: true });
+    window.close();
   }
 
   if (isLoading) {
@@ -40,7 +39,7 @@ export default function CandidateResultsPage() {
       <div className="min-h-screen flex items-center justify-center bg-warm-white px-4">
         <div className="bg-white rounded-comfortable shadow-card p-8 w-full max-w-md border border-whisper text-center">
           <p className="text-[15px] text-warm-gray-500 mb-4">
-            Unable to load exam results. The session may have expired.
+          Check your email for you results.
           </p>
           <button
             type="button"
@@ -110,9 +109,7 @@ export default function CandidateResultsPage() {
         {/* Grading message */}
         <div className="bg-warm-white border border-whisper rounded-subtle p-4 mb-6">
           <p className="text-[13px] text-warm-gray-500 leading-relaxed">
-            Your exam has been recorded. Results will be available once grading
-            is complete. Please contact your exam administrator for further
-            information.
+            Your exam has been recorded . An email will be sent to you with your results, Good Luck!
           </p>
         </div>
 

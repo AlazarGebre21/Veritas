@@ -183,7 +183,6 @@ export const enterpriseApi = {
     });
     return data;
   },
-
   /**
    * Merge-patch the enterprise settings object.
    * @param {string} id

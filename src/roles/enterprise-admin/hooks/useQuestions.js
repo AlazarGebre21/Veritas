@@ -22,6 +22,7 @@ export function useQuestion(id) {
     queryKey: queryKeys.questions.detail(id),
     queryFn: () => questionApi.getById(id, { with_correct_answer: true }),
     enabled: !!id,
+    refetchOnMount: "always",
   });
 }
 
@@ -69,6 +70,7 @@ export function useUploadQuestionMedia() {
     mutationFn: ({ questionId, file }) => questionApi.uploadMedia(questionId, file),
     onSuccess: (_, { questionId }) => {
       qc.invalidateQueries({ queryKey: queryKeys.questions.detail(questionId) });
+      qc.invalidateQueries({ queryKey: queryKeys.questions.all });
     },
   });
 }

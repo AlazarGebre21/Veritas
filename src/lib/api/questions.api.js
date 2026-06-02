@@ -102,7 +102,7 @@ export const questionApi = {
    */
   uploadMedia: async (questionId, file) => {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("media", file);
     const { data } = await apiClient.post(`/questions/${questionId}/media`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });

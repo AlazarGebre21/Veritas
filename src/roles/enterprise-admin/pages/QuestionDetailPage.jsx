@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,7 +25,6 @@ const questionSchema = z.object({
   type: z.enum(["MCQ", "TrueFalse", "ShortAnswer"]),
   difficulty: z.enum(["Easy", "Medium", "Hard"]),
   points: z.coerce.number().min(0, "Must be >= 0"),
-  negativePoints: z.coerce.number().min(0).optional().default(0),
   topic: z.string().min(1, "Topic is required"),
   expectedAnswer: z.string().optional().default(""),
   isActive: z.boolean().optional().default(true),
@@ -43,11 +42,14 @@ const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 export default function QuestionDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isNew = id === "new";
+  const defaultSubject = searchParams.get("subject") || "";
 
   // Fetch existing question
   const { data: question, isLoading } = useQuestion(isNew ? null : id);
 
+  // console.log("question", question)
   // Mutations
   const createQuestion = useCreateQuestion();
   const updateQuestion = useUpdateQuestion();
@@ -69,12 +71,11 @@ export default function QuestionDetailPage() {
   } = useForm({
     resolver: zodResolver(questionSchema),
     defaultValues: {
-      title: "",
+      title: defaultSubject,
       content: "",
       type: "MCQ",
       difficulty: "Easy",
       points: 1,
-      negativePoints: 0,
       topic: "",
       expectedAnswer: "",
       isActive: true,
@@ -126,7 +127,6 @@ export default function QuestionDetailPage() {
         type: question.type || "MCQ",
         difficulty: question.difficulty || "Easy",
         points: question.points || 0,
-        negativePoints: question.negativePoints || 0,
         topic: question.topic || "",
         expectedAnswer: question.expectedAnswer || "",
         isActive: question.isActive ?? true,
@@ -171,6 +171,15 @@ export default function QuestionDetailPage() {
     );
   }
 
+  function handleBack() {
+    const titleVal = watch("title") || question?.title;
+    if (titleVal) {
+      navigate(ROUTES.QUESTIONS_SUBJECT.replace(":subjectName", encodeURIComponent(titleVal)));
+    } else {
+      navigate(ROUTES.QUESTIONS);
+    }
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────
   function onSubmit(values) {
     // Build payload explicitly — only send what the API accepts
@@ -180,14 +189,11 @@ export default function QuestionDetailPage() {
       type: values.type,
       difficulty: values.difficulty,
       points: values.points,
+      negativePoints: 0,
       topic: values.topic,
       isActive: values.isActive,
+      ...(mediaLink ? { mediaUrl: mediaLink } : {}),
     };
-
-    // Only send negativePoints if non-zero
-    if (values.negativePoints > 0) {
-      payload.negativePoints = values.negativePoints;
-    }
 
     // expectedAnswer only for ShortAnswer
     if (values.type === "ShortAnswer" && values.expectedAnswer?.trim()) {
@@ -201,12 +207,20 @@ export default function QuestionDetailPage() {
 
     if (isNew) {
       createQuestion.mutate(payload, {
-        onSuccess: () => navigate(ROUTES.QUESTIONS),
+        onSuccess: () => {
+          const subject = values.title ? encodeURIComponent(values.title) : "";
+          navigate(subject ? ROUTES.QUESTIONS_SUBJECT.replace(":subjectName", subject) : ROUTES.QUESTIONS);
+        },
       });
     } else {
       updateQuestion.mutate(
         { id, payload },
-        { onSuccess: () => navigate(ROUTES.QUESTIONS) }
+        { 
+          onSuccess: () => {
+            const subject = values.title ? encodeURIComponent(values.title) : "";
+            navigate(subject ? ROUTES.QUESTIONS_SUBJECT.replace(":subjectName", subject) : ROUTES.QUESTIONS);
+          }
+        }
       );
     }
   }
@@ -224,10 +238,10 @@ export default function QuestionDetailPage() {
     <div className="space-y-6">
       {/* Back link */}
       <button
-        onClick={() => navigate(ROUTES.QUESTIONS)}
+        onClick={handleBack}
         className="flex items-center gap-1.5 text-[14px] text-warm-gray-500 hover:text-notion-black transition-colors"
       >
-        <ArrowLeft size={16} /> Back to Question Bank
+        <ArrowLeft size={16} /> Back to Subject
       </button>
 
       {/* Header */}
@@ -305,23 +319,14 @@ export default function QuestionDetailPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Points"
-                    id="q-points"
-                    type="number"
-                    min={0}
-                    error={errors.points?.message}
-                    {...register("points")}
-                  />
-                  <Input
-                    label="Negative Points"
-                    id="q-neg"
-                    type="number"
-                    min={0}
-                    {...register("negativePoints")}
-                  />
-                </div>
+                <Input
+                  label="Points"
+                  id="q-points"
+                  type="number"
+                  min={0}
+                  error={errors.points?.message}
+                  {...register("points")}
+                />
 
                 <Input
                   label="Topic"
@@ -437,78 +442,104 @@ export default function QuestionDetailPage() {
               </Card>
             )}
 
-            {/* Media Upload (!isNew) */}
-            {!isNew && (
-              <Card>
-                <CardContent className="p-6 space-y-4">
+            {/* Media Upload */}
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
                   <h3 className="text-[16px] font-semibold text-notion-black">Media</h3>
-                  <p className="text-[13px] text-warm-gray-500 -mt-2">
-                    Upload an image, video, or PDF. Max 5MB.
-                  </p>
-
-                  {mediaLink && (
-                    <div className="mb-3 flex items-center gap-2 p-2.5 rounded-micro border border-whisper bg-warm-white/60">
-                      <FileImage size={15} className="text-notion-blue shrink-0" />
-                      <a
-                        href={mediaLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[12px] text-notion-blue hover:underline truncate flex-1"
-                      >
-                        {mediaLink}
-                      </a>
-                    </div>
+                  {isNew && (
+                    <Badge variant="neutral">Save/Create first to upload</Badge>
                   )}
+                </div>
+                <p className="text-[13px] text-warm-gray-500 -mt-2">
+                  Upload an image, video, or PDF. Max 5MB.
+                </p>
 
-                  {/* Drop zone */}
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setMediaDragOver(true); }}
-                    onDragLeave={() => setMediaDragOver(false)}
-                    onDrop={handleMediaDrop}
-                    onClick={() => mediaFileRef.current?.click()}
-                    className={`border-2 border-dashed rounded-micro p-5 text-center cursor-pointer transition-colors ${
-                      mediaDragOver
-                        ? "border-notion-blue bg-notion-blue/5"
-                        : "border-whisper hover:border-warm-gray-300 bg-warm-white/50"
-                    }`}
-                  >
-                    <input
-                      ref={mediaFileRef}
-                      type="file"
-                      accept="image/*,video/*,.pdf"
-                      className="hidden"
-                      onChange={(e) => handleMediaFile(e.target.files?.[0])}
-                    />
-                    <Upload size={20} className="mx-auto text-warm-gray-300 mb-2" />
-                    {uploadQuestionMedia.isPending ? (
-                      <p className="text-[13px] text-warm-gray-500">Uploading…</p>
-                    ) : (
-                      <>
-                        <p className="text-[13px] text-warm-gray-500">
-                          Drop a file or{" "}
-                          <span className="text-notion-blue font-medium">browse</span>
-                        </p>
-                        <p className="text-[11px] text-warm-gray-300 mt-1">
-                          Image, video or PDF · Max 5 MB
-                        </p>
-                      </>
-                    )}
+                {isNew ? (
+                  <div className="border-2 border-dashed rounded-micro p-5 text-center border-whisper bg-warm-white/50">
+                    <Upload size={20} className="mx-auto text-warm-gray-300 mb-2 opacity-50" />
+                    <p className="text-[13px] text-warm-gray-500">
+                      You must save/create the question first before uploading media.
+                    </p>
                   </div>
+                ) : (
+                  <>
+                    {mediaLink && (
+                      <div className="mb-3 rounded-micro border border-whisper overflow-hidden bg-warm-white/60">
+                        {/\.(jpe?g|png|gif|webp|svg|avif)(\?|$)/i.test(mediaLink) ? (
+                          <a href={mediaLink} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={mediaLink}
+                              alt="Question media"
+                              className="w-full max-h-52 object-contain bg-warm-white"
+                            />
+                          </a>
+                        ) : (
+                          <div className="flex items-center gap-2 p-2.5">
+                            <FileImage size={15} className="text-notion-blue shrink-0" />
+                            <a
+                              href={mediaLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[12px] text-notion-blue hover:underline truncate flex-1"
+                            >
+                              {mediaLink}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                  {uploadQuestionMedia.isError && (
-                    <p className="flex items-center gap-1 text-[12px] text-destructive mt-1.5">
-                      <AlertCircle size={12} />
-                      {uploadQuestionMedia.error?.response?.data?.error || "Upload failed."}
-                    </p>
-                  )}
-                  {uploadQuestionMedia.isSuccess && (
-                    <p className="flex items-center gap-1 text-[12px] text-success mt-1.5">
-                      <CheckCircle2 size={12} /> Media uploaded successfully.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                    {/* Drop zone */}
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setMediaDragOver(true); }}
+                      onDragLeave={() => setMediaDragOver(false)}
+                      onDrop={handleMediaDrop}
+                      onClick={() => mediaFileRef.current?.click()}
+                      className={`border-2 border-dashed rounded-micro p-5 text-center cursor-pointer transition-colors ${
+                        mediaDragOver
+                          ? "border-notion-blue bg-notion-blue/5"
+                          : "border-whisper hover:border-warm-gray-300 bg-warm-white/50"
+                      }`}
+                    >
+                      <input
+                        ref={mediaFileRef}
+                        type="file"
+                        accept="image/*,video/*,.pdf"
+                        className="hidden"
+                        onChange={(e) => handleMediaFile(e.target.files?.[0])}
+                      />
+                      <Upload size={20} className="mx-auto text-warm-gray-300 mb-2" />
+                      {uploadQuestionMedia.isPending ? (
+                        <p className="text-[13px] text-warm-gray-500">Uploading…</p>
+                      ) : (
+                        <>
+                          <p className="text-[13px] text-warm-gray-500">
+                            Drop a file or{" "}
+                            <span className="text-notion-blue font-medium">browse</span>
+                          </p>
+                          <p className="text-[11px] text-warm-gray-300 mt-1">
+                            Image, video or PDF · Max 5 MB
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    {uploadQuestionMedia.isError && (
+                      <p className="flex items-center gap-1 text-[12px] text-destructive mt-1.5">
+                        <AlertCircle size={12} />
+                        {uploadQuestionMedia.error?.response?.data?.error || "Upload failed."}
+                      </p>
+                    )}
+                    {uploadQuestionMedia.isSuccess && (
+                      <p className="flex items-center gap-1 text-[12px] text-success mt-1.5">
+                        <CheckCircle2 size={12} /> Media uploaded successfully.
+                      </p>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
 
@@ -520,7 +551,7 @@ export default function QuestionDetailPage() {
         )}
 
         <div className="flex items-center justify-end gap-3 border-t border-whisper pt-5">
-          <Button type="button" variant="secondary" onClick={() => navigate(ROUTES.QUESTIONS)}>
+          <Button type="button" variant="secondary" onClick={handleBack}>
             Cancel
           </Button>
           <Button type="submit" disabled={saving}>

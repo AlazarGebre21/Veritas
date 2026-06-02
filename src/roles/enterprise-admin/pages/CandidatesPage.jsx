@@ -301,7 +301,7 @@ export default function CandidatesPage() {
             />
           </div>
           <Input
-            label="Email (optional)"
+            label="Email"
             id="candidate-email"
             type="email"
             placeholder="jane@example.com"
@@ -309,9 +309,9 @@ export default function CandidatesPage() {
             {...register("email")}
           />
           <Input
-            label="External ID (optional)"
+            label="ID"
             id="candidate-externalId"
-            placeholder="e.g. student number"
+            placeholder="Must Be Unique number"
             {...register("externalId")}
           />
 
@@ -352,7 +352,7 @@ export default function CandidatesPage() {
             />
           </div>
           <Input
-            label="Email (optional)"
+            label="Email"
             id="edit-candidate-email"
             type="email"
             placeholder="jane@example.com"
@@ -360,9 +360,9 @@ export default function CandidatesPage() {
             {...editRegister("email")}
           />
           <Input
-            label="External ID (optional)"
+            label="ID"
             id="edit-candidate-externalId"
-            placeholder="e.g. student number"
+            placeholder="Must be Unique"
             {...editRegister("externalId")}
           />
 
@@ -439,7 +439,7 @@ function BulkUploadModal({ isOpen, onClose, mutation }) {
     <Modal isOpen={isOpen} onClose={handleClose} title="Bulk Upload Candidates">
       <div className="space-y-4">
         <p className="text-[14px] text-warm-gray-500">
-          Upload a CSV file with columns: <code className="text-[13px] bg-warm-white px-1.5 py-0.5 rounded-micro font-mono leading-loose">external_id(required), first_name(required), last_name(required), email(optional)</code>
+          Upload a CSV file with columns: <code className="text-[13px] bg-warm-white px-1.5 py-0.5 rounded-micro font-mono leading-loose">id(required), first_name(required), last_name(required), email(required)</code>
         </p>
 
         {/* Drop zone */}

@@ -404,13 +404,111 @@ function PaymentHistorySection() {
 
 /* ─── Plans Section ──────────────────────────────────────────────────────────── */
 
+const PROVIDERS = [
+  { value: "stripe", label: "Stripe" },
+  { value: "chapa", label: "Chapa" },
+];
+
+function PlanCard({ plan, currentPlanId, upgradeMutation }) {
+  const [provider, setProvider] = useState("stripe");
+  const isCurrent = currentPlanId === plan.id;
+  const isPending =
+    upgradeMutation.isPending &&
+    upgradeMutation.variables?.planId === plan.id;
+
+  return (
+    <Card
+      className={`relative h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-subtle ${
+        isCurrent ? "border-notion-blue ring-1 ring-notion-blue/20" : ""
+      }`}
+    >
+      {isCurrent && (
+        <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 z-10">
+          <Badge variant="success" className="shadow-sm">Current Plan</Badge>
+        </div>
+      )}
+      <CardContent className="p-6 flex flex-col flex-1">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-notion-black">{plan.name}</h3>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-2xl font-bold text-notion-black tracking-tight">
+              {formatPrice(plan.price, plan.currency || "ETB")}
+            </span>
+            <span className="text-warm-gray-400 text-sm">
+              /{plan.billing_cycle === "yearly" ? "yr" : "mo"}
+            </span>
+          </div>
+          <p className="text-sm text-warm-gray-500 mt-2 min-h-[40px]">
+            {plan.description || "The ideal plan for growing teams."}
+          </p>
+        </div>
+
+        <div className="space-y-3 mb-6 flex-1">
+          {Object.entries(plan.features || {}).map(([key, val]) => (
+            <div key={key} className="flex items-start gap-2.5">
+              <div className="mt-0.5 rounded-full bg-notion-blue/10 p-[2px] shrink-0 text-notion-blue">
+                <Check size={12} strokeWidth={3} />
+              </div>
+              <span className="text-sm text-notion-black font-medium tracking-tight">
+                {key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}:{" "}
+                <span className="font-normal text-warm-gray-500">{val}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Provider selector — only shown for non-current plans */}
+        {!isCurrent && (
+          <div className="mb-3">
+            <p className="text-[11px] font-semibold text-warm-gray-400 uppercase tracking-wide mb-1.5">
+              Pay via
+            </p>
+            <div className="flex gap-2">
+              {PROVIDERS.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => setProvider(p.value)}
+                  className={`flex-1 py-1.5 text-[12px] font-medium rounded-micro border transition-all ${
+                    provider === p.value
+                      ? "bg-notion-blue text-white border-notion-blue shadow-sm"
+                      : "bg-transparent text-warm-gray-500 border-whisper hover:border-notion-blue/40 hover:text-notion-blue"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Button
+          className={`w-full mt-auto ${
+            isCurrent
+              ? "bg-warm-gray-100 text-warm-gray-500 hover:bg-warm-gray-200 cursor-not-allowed border-none"
+              : "bg-notion-blue text-white hover:bg-[#004dc2] shadow-sm"
+          }`}
+          disabled={isCurrent || upgradeMutation.isPending}
+          isLoading={isPending}
+          onClick={() =>
+            !isCurrent &&
+            upgradeMutation.mutate({ planId: plan.id, provider })
+          }
+        >
+          {isCurrent ? "Current Plan" : `Upgrade via ${PROVIDERS.find((p) => p.value === provider)?.label}`}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function PlansSection({ currentPlanId }) {
   const enterpriseId = useAuthStore((s) => s.user?.enterpriseId);
   const { data: plansData, isLoading } = usePlans();
   const upgradeMutation = useUpgradeSubscription(enterpriseId);
-  
+
   const plans = plansData?.data || [];
-  const activePlans = plans.filter(p => p.is_active);
+  const activePlans = plans.filter((p) => p.is_active);
 
   if (isLoading) {
     return (
@@ -434,53 +532,17 @@ function PlansSection({ currentPlanId }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {activePlans.map(plan => {
-          const isCurrent = currentPlanId === plan.id;
-          return (
-            <Card key={plan.id} className={`relative h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-subtle ${isCurrent ? 'border-notion-blue ring-1 ring-notion-blue/20' : ''}`}>
-              {isCurrent && (
-                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 z-10">
-                  <Badge variant="success" className="shadow-sm">Current Plan</Badge>
-                </div>
-              )}
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="mb-4">
-                  <h3 className="text-lg font-bold text-notion-black">{plan.name}</h3>
-                  <div className="mt-2 flex items-baseline gap-1">
-                    <span className="text-2xl font-bold text-notion-black tracking-tight">{formatPrice(plan.price, plan.currency || "ETB")}</span>
-                    <span className="text-warm-gray-400 text-sm">/{plan.billing_cycle === 'yearly' ? 'yr' : 'mo'}</span>
-                  </div>
-                  <p className="text-sm text-warm-gray-500 mt-2 min-h-[40px]">{plan.description || "The ideal plan for growing teams."}</p>
-                </div>
-                
-                <div className="space-y-3 mb-8 flex-1">
-                  {Object.entries(plan.features || {}).map(([key, val]) => (
-                    <div key={key} className="flex items-start gap-2.5">
-                      <div className="mt-0.5 rounded-full bg-notion-blue/10 p-[2px] shrink-0 text-notion-blue">
-                        <Check size={12} strokeWidth={3} />
-                      </div>
-                      <span className="text-sm text-notion-black font-medium tracking-tight">
-                        {key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}: <span className="font-normal text-warm-gray-500">{val}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <Button 
-                  className={`w-full mt-auto ${isCurrent ? 'bg-warm-gray-100 text-warm-gray-500 hover:bg-warm-gray-200 cursor-not-allowed border-none' : 'bg-notion-blue text-white hover:bg-[#004dc2] shadow-sm'}`}
-                  disabled={isCurrent || upgradeMutation.isPending}
-                  isLoading={upgradeMutation.isPending && upgradeMutation.variables === plan.id}
-                  onClick={() => upgradeMutation.mutate(plan.id)}
-                >
-                  {isCurrent ? "Current Plan" : "Upgrade to " + plan.name}
-                </Button>
-              </CardContent>
-            </Card>
-          )
-        })}
+        {activePlans.map((plan) => (
+          <PlanCard
+            key={plan.id}
+            plan={plan}
+            currentPlanId={currentPlanId}
+            upgradeMutation={upgradeMutation}
+          />
+        ))}
       </div>
     </div>
-  )
+  );
 }
 
 /* ─── Pagination Controls ────────────────────────────────────────────────────── */

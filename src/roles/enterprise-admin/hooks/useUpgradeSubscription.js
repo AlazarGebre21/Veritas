@@ -6,19 +6,22 @@ import { normalizeError } from "@/lib/utils/errorNormalizer.js";
 
 /**
  * Hook to create a checkout session for upgrading a subscription.
- * @param {string} enterpriseId 
+ * Accepts { planId, provider } — provider is optional and defaults to 'stripe'.
+ * @param {string} enterpriseId
  */
 export function useUpgradeSubscription(enterpriseId) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (planId) => paymentApi.upgradeSubscription(enterpriseId, planId),
+    mutationFn: ({ planId, provider }) =>
+      paymentApi.upgradeSubscription(enterpriseId, planId, provider),
     onSuccess: (data) => {
-      if (data && (data.checkout_url || data.url)) {
-        window.location.href = data.checkout_url || data.url;
+      // Both Stripe and Chapa return a redirect URL (key may differ by provider)
+      const redirectUrl = data?.checkout_url;
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
       } else {
         toast.success("Upgrade process initiated successfully.");
-        // If it doesn't return a checkout session (e.g. mock mode or test), just invalidate.
         queryClient.invalidateQueries({
           queryKey: queryKeys.payments.subscription(enterpriseId),
         });

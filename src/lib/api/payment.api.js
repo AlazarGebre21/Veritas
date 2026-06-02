@@ -252,12 +252,13 @@ export const paymentApi = {
    * Create a checkout session to upgrade an enterprise subscription.
    * @param {string} enterpriseId
    * @param {string} planId
+   * @param {'stripe'|'chapa'} [provider] - Optional payment provider. Defaults to 'stripe'.
    * @returns {Promise<any>}
    */
-  upgradeSubscription: async (enterpriseId, planId) => {
-    const { data } = await apiClient.post(`/subscriptions/${enterpriseId}/upgrade`, {
-      plan_id: planId,
-    });
+  upgradeSubscription: async (enterpriseId, planId, provider) => {
+    const body = { plan_id: planId };
+    if (provider) body.provider = provider;
+    const { data } = await apiClient.post(`/subscriptions/${enterpriseId}/upgrade`, body);
     return data;
   },
 };

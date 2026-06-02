@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import { useNavigate, useParams } from "react-router-dom";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { useQuestions, useDeleteQuestion } from "../hooks/useQuestions.js";
@@ -112,7 +112,7 @@ export default function SubjectQuestionsPage() {
             Questions categorized under this subject.
           </p>
         </div>
-        <Button onClick={() => navigate(ROUTES.QUESTION_DETAIL.replace(":id", "new"))}>
+        <Button onClick={() => navigate(`${ROUTES.QUESTION_DETAIL.replace(":id", "new")}?subject=${encodeURIComponent(decodedSubject)}`)}>
           <Plus size={16} className="mr-2" />
           Create Question
         </Button>

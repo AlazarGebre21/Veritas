@@ -32,7 +32,7 @@ export default function ExamSessionPage() {
   // Data fetching
   const { data: questionsData, isLoading } = useSessionQuestions(sessionId);
   const questions = questionsData?.data || [];
-  console.log(questions)
+  // console.log(questions)
 
   // Answer state (local Map: sessionQuestionId → answerData)
   const [answers, setAnswers] = useState(new Map());
@@ -40,6 +40,11 @@ export default function ExamSessionPage() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [examTitle, setExamTitle] = useState("Exam Session");
   const [expiresAt, setExpiresAt] = useState(null);
+  const [fontScale, setFontScale] = useState(100);
+
+  function adjustFont(delta) {
+    setFontScale((prev) => Math.min(150, Math.max(75, prev + delta)));
+  }
 
   // Hooks
   const saveAnswer = useSaveAnswer(sessionId);
@@ -186,7 +191,7 @@ export default function ExamSessionPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0" style={{ "--exam-font-scale": `${fontScale}%` }}>
       <OfflineBanner isOnline={isOnline} pendingCount={pendingCount} />
       <OfflineBanner isOnline={isOnline} pendingCount={pendingCount} />
 
@@ -195,6 +200,8 @@ export default function ExamSessionPage() {
         examTitle={examTitle}
         expiresAt={expiresAt}
         onExpire={handleExpire}
+        fontScale={fontScale}
+        onAdjustFont={adjustFont}
       >
         <ProctoringMonitor
           webcamStream={webcamStream}

@@ -255,8 +255,7 @@ export default function SubscriptionPlansPage() {
                 className="w-full border border-[#ddd] rounded-micro px-3.5 py-2 text-[14px] text-notion-black transition-all focus:outline-none focus:ring-2 focus:border-notion-blue focus:ring-notion-blue/20 bg-white"
               >
                 <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
+                <option value="ETB">ETB</option>
               </select>
             </div>
             <div className="w-full">

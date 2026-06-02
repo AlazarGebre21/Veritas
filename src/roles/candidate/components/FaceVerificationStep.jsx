@@ -94,6 +94,7 @@ export default function FaceVerificationStep({ onCapture, isLoading }) {
   function handleConfirm() {
     const blob = canvasRef.current?._capturedBlob;
     if (blob) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
       onCapture(blob);
     }
   }

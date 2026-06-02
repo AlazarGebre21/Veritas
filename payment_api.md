@@ -427,9 +427,46 @@ Creates a payment provider checkout session to upgrade an enterprise subscriptio
 
 ```json
 {
-  "plan_id": "string"
+  "plan_id": "string",
+  "provider": "string"
 }
 ```
+
+## POST /webhooks/chapa PUBLIC ENDPOINT
+
+### Handle Chapa Webhook
+
+Validates and processes a Chapa webhook event payload.
+
+---
+
+### Parameters
+
+| Name                | Type     | Location | Description                 |
+| ------------------- | -------- | -------- | --------------------------- |
+| `chapa-signature`   | `string` | Header   | Chapa webhook signature     |
+| `x-chapa-signature` | `string` | Header   | Alternative Chapa signature |
+| `payload`           | `string` | Body     | Raw webhook payload         |
+
+#### Request Body
+
+**Content-Type:** `application/json`
+
+##### Example Value
+
+```json
+"string"
+```
+
+---
+
+### Responses
+
+**Response Content-Type:** `application/json`
+
+| Code  | Description |
+| ----- | ----------- |
+| `200` | OK          |
 
 # POST /webhooks/stripe PUBLIC Endpoint
 

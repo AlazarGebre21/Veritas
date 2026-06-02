@@ -16,6 +16,7 @@ export function ExamQuestionsTab({ examId, exam }) {
   // Fetch attached questions
   const { data: attachedData, isLoading } = useExamQuestions(examId);
   const attached = attachedData?.data || [];
+  console.log("exam questions", attachedData);
   const sortedAttached = [...attached].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
 
   // Fetch ALL bank questions once — client-side search filtering
@@ -89,6 +90,26 @@ export function ExamQuestionsTab({ examId, exam }) {
                     <p className="text-[14px] font-medium text-notion-black">
                       {item.question?.content || item.question?.title}
                     </p>
+                    {item.question?.mediaUrl && (
+                      /\.(jpe?g|png|gif|webp|svg|avif)(\?|$)/i.test(item.question.mediaUrl) ? (
+                        <a href={item.question.mediaUrl} target="_blank" rel="noopener noreferrer" className="block mt-2">
+                          <img
+                            src={item.question.mediaUrl}
+                            alt="Question media"
+                            className="max-h-40 max-w-xs rounded border border-whisper object-contain bg-warm-white"
+                          />
+                        </a>
+                      ) : (
+                        <a
+                          href={item.question.mediaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-1.5 text-[12px] text-notion-blue hover:underline truncate max-w-xs"
+                        >
+                          {item.question.mediaUrl}
+                        </a>
+                      )
+                    )}
                     {item.question?.type === "MCQ" && item.question?.options && (
                       <div className="mt-2 space-y-1">
                         {item.question.options.map((opt, i) => (
