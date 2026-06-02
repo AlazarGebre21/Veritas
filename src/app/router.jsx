@@ -203,8 +203,6 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // Default redirect
-      { index: true, element: <Navigate to={ROUTES.LOGIN} replace /> },
     ],
   },
 

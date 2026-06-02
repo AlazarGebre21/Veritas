@@ -1,21 +1,14 @@
-import {
-  Navbar,
-  NavbarBrand,
-  NavbarContent,
-  NavbarItem,
-  NavbarMenuToggle,
-  NavbarMenu,
-  NavbarMenuItem,
-  Link,
-  Button
-} from "@heroui/react";
+import { Button } from "@/components/ui/Button";
 import ThemeSwitcher from "@/components/ui/theme-switcher";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Menu, X } from "lucide-react";
 
 export default function NavBar() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -35,26 +28,17 @@ export default function NavBar() {
   ];
 
   return (
-    <Navbar 
-      isBlurred 
-      maxWidth="xl" 
-      className="px-4 sm:px-6 lg:px-8"
-      classNames={{
-        wrapper: "px-0",
-        base: "bg-background/90 backdrop-blur-xl",
-      }}
-    >
-      {/* Mobile Menu Toggle */}
-      <NavbarContent className="sm:hidden" justify="start">
-        <NavbarMenuToggle />
-      </NavbarContent>
-
-      {/* Mobile Brand */}
-      <NavbarContent className="sm:hidden" justify="center">
-        <NavbarBrand>
-          <Link
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-xl flex h-16 items-center justify-between">
+        
+        {/* Mobile Menu Toggle & Brand */}
+        <div className="flex items-center gap-4 sm:hidden">
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 -ml-2 text-foreground">
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          <a
             href="/"
-            className="flex items-center gap-2 font-semibold tracking-tight text-inherit text-lg hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 font-semibold tracking-tight text-lg hover:opacity-80 transition-opacity"
           >
             <img
               src={logoSrc}
@@ -64,16 +48,14 @@ export default function NavBar() {
               className="h-7 w-7 rounded-md object-contain"
             />
             Veritas
-          </Link>
-        </NavbarBrand>
-      </NavbarContent>
+          </a>
+        </div>
 
-      {/* Desktop Navigation */}
-      <NavbarContent className="hidden sm:flex gap-6" justify="center">
-        <NavbarBrand className="mr-8">
-          <Link
+        {/* Desktop Brand */}
+        <div className="hidden sm:flex items-center gap-6">
+          <a
             href="/"
-            className="flex items-center gap-3 font-semibold tracking-tight text-2xl hover:opacity-80 transition-opacity"
+            className="flex items-center gap-3 font-semibold tracking-tight text-2xl hover:opacity-80 transition-opacity mr-8"
           >
             <img
               src={logoSrc}
@@ -83,83 +65,52 @@ export default function NavBar() {
               className="h-8 w-8 rounded-lg object-contain"
             />
             Veritas
-          </Link>
-        </NavbarBrand>
-        
-        <div className="flex items-center gap-2">
-          <NavbarItem>
-            <Button as={Link} href="#product" variant="light" size="sm" className="px-3">
-              Home
-            </Button>
-          </NavbarItem>
-          <NavbarItem>
-            <Button as={Link} href="#pricing" variant="light" size="sm" className="px-3">
-              Pricing
-            </Button>
-          </NavbarItem>
-          <NavbarItem>
-            <Button as={Link} href="#testimonials" variant="light" size="sm" className="px-3">
-              Testimonials
-            </Button>
-          </NavbarItem>
-          <NavbarItem>
-            <Button as={Link} href="#faq" variant="light" size="sm" className="px-3">
-              FAQ
-            </Button>
-          </NavbarItem>
+          </a>
+          
+          <nav className="flex items-center gap-4 text-sm font-medium">
+            <a href="#product" className="transition-colors hover:text-foreground/80 text-foreground/60">Home</a>
+            <a href="#pricing" className="transition-colors hover:text-foreground/80 text-foreground/60">Pricing</a>
+            <a href="#testimonials" className="transition-colors hover:text-foreground/80 text-foreground/60">Testimonials</a>
+            <a href="#faq" className="transition-colors hover:text-foreground/80 text-foreground/60">FAQ</a>
+            <a href="#system-modules" className="transition-colors hover:text-foreground/80 text-foreground/60">System Modules</a>
+          </nav>
         </div>
 
-        <NavbarItem>
-            <Button as={Link} href="#system-modules" variant="light" size="sm" className="px-3">
-              System Modules
-            </Button>
-        </NavbarItem>
-      </NavbarContent>
-
-      {/* Right Side Actions */}
-      <NavbarContent justify="end" className="gap-3">
-        <NavbarItem className="hidden sm:flex">
-          <Button
-            as={Link}
-            href="#pricing"
-            variant="solid"
-            size="sm"
-            className="px-4 transition-all duration-200 hover:bg-light hover:text-white hover:shadow-[0_0_18px_rgba(91,168,255,0.55)]"
-          >
-            Sign In
-          </Button>
-        </NavbarItem>
-        <NavbarItem>
+        {/* Right Side Actions */}
+        <div className="flex items-center gap-3 justify-end flex-1 sm:flex-none">
+          <div className="hidden sm:block">
+            <Link to="/login">
+              <Button size="sm" className="px-4 transition-all duration-200 hover:bg-light hover:text-white hover:shadow-[0_0_18px_rgba(91,168,255,0.55)]">
+                Sign In
+              </Button>
+            </Link>
+          </div>
           <ThemeSwitcher />
-        </NavbarItem>
-      </NavbarContent>
+        </div>
+      </div>
 
       {/* Mobile Menu */}
-      <NavbarMenu className="pt-6">
-        {menuItems.map((item, index) => (
-          <NavbarMenuItem key={`${item.name}-${index}`}>
-            <Link
-              className="w-full text-lg"
-              href={item.href}
-              size="lg"
-              color="foreground"
-            >
-              {item.name}
+      {isMenuOpen && (
+        <div className="sm:hidden border-t border-border/40 px-4 py-4 space-y-4 bg-background">
+          <nav className="flex flex-col gap-4">
+            {menuItems.map((item, index) => (
+              <a
+                key={item.name}
+                href={item.href}
+                className="text-lg font-medium transition-colors hover:text-foreground/80"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {item.name}
+              </a>
+            ))}
+          </nav>
+          <div className="pt-4 border-t border-border/40">
+            <Link to="/login">
+              <Button className="w-full h-12 text-lg">Sign In</Button>
             </Link>
-          </NavbarMenuItem>
-        ))}
-        <NavbarMenuItem className="pt-4">
-          <Button
-            as={Link}
-            href="#pricing"
-            variant="solid"
-            size="lg"
-            className="w-full transition-all duration-200 hover:bg-light hover:text-white hover:shadow-[0_0_18px_rgba(91,168,255,0.55)]"
-          >
-            Sign In
-          </Button>
-        </NavbarMenuItem>
-      </NavbarMenu>
-    </Navbar>
+          </div>
+        </div>
+      )}
+    </header>
   );
 }

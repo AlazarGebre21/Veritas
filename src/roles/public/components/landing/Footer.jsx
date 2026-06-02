@@ -1,4 +1,4 @@
-import { Link, Divider } from "@heroui/react";
+import { Link } from "react-router-dom";
 import {
   Github,
   Linkedin,
@@ -54,19 +54,19 @@ const Footer = () => {
                     </Link>
                   </li>
                   <li>
-                    <Link href="#pricing" className={linkClass}>
+                    <a href="#pricing" className={linkClass}>
                       Pricing
-                    </Link>
+                    </a>
                   </li>
                   <li>
-                    <Link href="#testimonials" className={linkClass}>
+                    <a href="#testimonials" className={linkClass}>
                       Testimonials
-                    </Link>
+                    </a>
                   </li>
                   <li>
-                    <Link href="#faq" className={linkClass}>
+                    <a href="#faq" className={linkClass}>
                       FAQ
-                    </Link>
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -88,7 +88,7 @@ const Footer = () => {
               </div>
             </div>
 
-            <Divider className="my-8" />
+            <div className="w-full h-px bg-border my-8" />
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

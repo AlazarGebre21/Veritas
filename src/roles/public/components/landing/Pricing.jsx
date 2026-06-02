@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { Card, CardBody, CardFooter } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Divider } from "@heroui/react";
+import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -103,27 +101,26 @@ export default function Pricing() {
       </div>
       <div className="mt-16 gap-10 grid lg:grid-cols-3 place-content-center">
         {plans.map((item, idx) => (
-          <Card
+          <div
             key={idx}
-            shadow="none"
             className={`relative rounded-[20px] p-[3px] will-change-transform ${
               item.isMostPop ? "sm:scale-110" : ""
             }`}
           >
             {item.isMostPop ? (
-              <span className="absolute inset-[-1000%] animate-[spin_6s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#016FEE_70%,#C7DBFB_100%)]" />
+              <span className="absolute inset-[-500%] animate-[spin_6s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#016FEE_70%,#C7DBFB_100%)] rounded-[20px]" />
             ) : (
-              <span className="absolute inset-[-1000%] bg-border" />
+              <span className="absolute inset-0 bg-border rounded-[20px]" />
             )}
-            <div className="z-[2] flex flex-col justify-between w-full h-full bg-card rounded-[18px] p-5">
-              <CardBody className="w-full flex items-start gap-3">
+            <div className="z-[2] relative flex flex-col justify-between w-full h-full bg-card rounded-[18px] p-6 shadow-sm">
+              <div className="w-full flex flex-col items-start gap-4 flex-1">
                 <div className="flex flex-col">
                   <h4 className="text-xl font-medium">{item.name}</h4>
-                  <span className="text-muted-foreground text-sm font-light">
+                  <span className="text-muted-foreground text-sm font-light mt-1">
                     {item.desc}
                   </span>
                 </div>
-                <div className="flex flex-col items-start gap-1">
+                <div className="flex flex-col items-start gap-1 w-full mt-4">
                   {billing === "yearly" ? (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
@@ -176,32 +173,32 @@ export default function Pricing() {
                   )}
                 </div>
 
-                <Divider />
+                <div className="w-full h-px border-t border-border my-2" />
 
-                <div className="flex flex-col gap-5 pb-5">
+                <div className="flex flex-col gap-4 pb-5 flex-1 w-full">
                   <span className="text-muted-foreground text-sm font-medium">
                     Includes
                   </span>
-                  <ul className="flex flex-col gap-2">
+                  <ul className="flex flex-col gap-3">
                     {item.features.map((feature, index) => (
-                      <li key={index} className="text-sm font-light">
+                      <li key={index} className="text-sm font-light flex gap-2 items-center">
+                        <svg className="w-4 h-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                         {feature}
                       </li>
                     ))}
                   </ul>
                 </div>
-              </CardBody>
-              <CardFooter className="p-0">
+              </div>
+              <div className="p-0 mt-6 mt-auto">
                 <Button
                   className="w-full"
-                  variant="solid"
-                  color={item.isMostPop ? "primary" : "default"}
+                  variant={item.isMostPop ? "default" : "outline"}
                 >
                   {item.cta}
                 </Button>
-              </CardFooter>
+              </div>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
     </motion.section>
