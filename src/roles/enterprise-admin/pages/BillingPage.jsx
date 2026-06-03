@@ -1,13 +1,10 @@
 import { useState } from "react";
 import {
-  CreditCard, Receipt, Clock, DollarSign, CalendarDays,
-  ArrowUpRight, FileText, RefreshCw, XCircle, ChevronLeft, ChevronRight,
-  ExternalLink, Download, Loader2, Check,
+  CreditCard, Clock, CalendarDays,
+  RefreshCw, XCircle, Check,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore.js";
 import { useBillingSummary } from "../hooks/useBillingSummary.js";
-import { useInvoices } from "../hooks/useInvoices.js";
-import { usePaymentHistory } from "../hooks/usePaymentHistory.js";
 import { useEnterpriseSubscription } from "../hooks/useEnterpriseSubscription.js";
 import { useCancelSubscription } from "../hooks/useCancelSubscription.js";
 import { useReactivateSubscription } from "../hooks/useReactivateSubscription.js";
@@ -80,12 +77,6 @@ export default function BillingPage() {
 
       {/* Available Plans */}
       <PlansSection currentPlanId={subscription?.plan_id} />
-
-      {/* Invoices Table */}
-      <InvoicesSection />
-
-      {/* Payment History Table */}
-      <PaymentHistorySection />
     </div>
   );
 }
@@ -95,8 +86,8 @@ export default function BillingPage() {
 function SummaryCards({ summary, isLoading }) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {Array.from({ length: 2 }).map((_, i) => (
           <Skeleton key={i} className="h-28 w-full rounded-comfortable" />
         ))}
       </div>
@@ -119,24 +110,10 @@ function SummaryCards({ summary, isLoading }) {
       bg: summary?.subscription_status === "Active" ? "bg-success/10" : "bg-warning/10",
       badge: true,
     },
-    {
-      label: "Outstanding Balance",
-      value: formatPrice(summary?.outstanding_balance),
-      icon: DollarSign,
-      color: summary?.outstanding_balance > 0 ? "text-destructive" : "text-success",
-      bg: summary?.outstanding_balance > 0 ? "bg-destructive/10" : "bg-success/10",
-    },
-    {
-      label: "Paid This Year",
-      value: formatPrice(summary?.total_paid_ytd),
-      icon: ArrowUpRight,
-      color: "text-notion-blue",
-      bg: "bg-notion-blue/10",
-    },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {cards.map((card) => (
         <Card key={card.label}>
           <CardContent className="flex items-center p-5">
@@ -244,163 +221,6 @@ function SubscriptionSection({ subscription, summary, isLoading, onCancel, onRea
   );
 }
 
-/* ─── Invoices Table ─────────────────────────────────────────────────────────── */
-
-function InvoicesSection() {
-  const [params, setParams] = useState({ page: 1, limit: 10, sort: "created_at", sort_dir: "desc" });
-  const { data, isLoading } = useInvoices(params);
-
-  const invoices = data?.data ?? [];
-  const meta = data?.metadata;
-
-  return (
-    <Card>
-      <CardContent>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[15px] font-semibold text-notion-black uppercase tracking-wide flex items-center gap-2">
-            <Receipt size={16} className="text-warm-gray-300" />
-            Invoices
-          </h2>
-        </div>
-
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-micro" />)}
-          </div>
-        ) : invoices.length === 0 ? (
-          <p className="text-center text-warm-gray-500 py-8 text-[14px]">No invoices yet.</p>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-whisper text-left">
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Number</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Amount Due</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Paid</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Remaining</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Status</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Due Date</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((inv) => (
-                    <tr key={inv.id} className="border-b border-whisper/50 hover:bg-warm-white/50 transition-colors">
-                      <td className="py-3 px-3 font-mono text-notion-black">{inv.number || "—"}</td>
-                      <td className="py-3 px-3 text-notion-black">{formatPrice(inv.amount_due, inv.currency)}</td>
-                      <td className="py-3 px-3 text-success">{formatPrice(inv.amount_paid, inv.currency)}</td>
-                      <td className="py-3 px-3 text-warm-gray-500">{formatPrice(inv.amount_remaining, inv.currency)}</td>
-                      <td className="py-3 px-3">
-                        <Badge variant={statusVariant(inv.status)}>{inv.status}</Badge>
-                      </td>
-                      <td className="py-3 px-3 text-warm-gray-500">{inv.due_date ? formatDate(inv.due_date) : "—"}</td>
-                      <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {inv.hosted_invoice_url && (
-                            <a
-                              href={inv.hosted_invoice_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 rounded-micro text-warm-gray-300 hover:text-notion-blue hover:bg-notion-blue/5 transition-colors"
-                              title="View online"
-                            >
-                              <ExternalLink size={14} />
-                            </a>
-                          )}
-                          {inv.invoice_pdf_url && (
-                            <a
-                              href={inv.invoice_pdf_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 rounded-micro text-warm-gray-300 hover:text-notion-blue hover:bg-notion-blue/5 transition-colors"
-                              title="Download PDF"
-                            >
-                              <Download size={14} />
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {meta && meta.total_pages > 1 && (
-              <PaginationControls meta={meta} onPageChange={(page) => setParams((p) => ({ ...p, page }))} />
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ─── Payment History Table ──────────────────────────────────────────────────── */
-
-function PaymentHistorySection() {
-  const [params, setParams] = useState({ page: 1, limit: 10, sort: "created_at", sort_dir: "desc" });
-  const { data, isLoading } = usePaymentHistory(params);
-
-  const payments = data?.data ?? [];
-  const meta = data?.metadata;
-
-  return (
-    <Card>
-      <CardContent>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[15px] font-semibold text-notion-black uppercase tracking-wide flex items-center gap-2">
-            <FileText size={16} className="text-warm-gray-300" />
-            Payment History
-          </h2>
-        </div>
-
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-micro" />)}
-          </div>
-        ) : payments.length === 0 ? (
-          <p className="text-center text-warm-gray-500 py-8 text-[14px]">No payment records yet.</p>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-whisper text-left">
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Amount</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Status</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Method</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Provider</th>
-                    <th className="py-2.5 px-3 font-semibold text-warm-gray-500 uppercase text-[11px] tracking-wide">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((p) => (
-                    <tr key={p.id} className="border-b border-whisper/50 hover:bg-warm-white/50 transition-colors">
-                      <td className="py-3 px-3 font-medium text-notion-black">{formatPrice(p.amount, p.currency)}</td>
-                      <td className="py-3 px-3">
-                        <Badge variant={statusVariant(p.status)}>{p.status}</Badge>
-                      </td>
-                      <td className="py-3 px-3 text-warm-gray-500">{p.payment_method_type || "—"}</td>
-                      <td className="py-3 px-3 text-warm-gray-500">{p.provider || "—"}</td>
-                      <td className="py-3 px-3 text-warm-gray-500">{p.created_at ? formatDate(p.created_at) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {meta && meta.total_pages > 1 && (
-              <PaginationControls meta={meta} onPageChange={(page) => setParams((p) => ({ ...p, page }))} />
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 /* ─── Plans Section ──────────────────────────────────────────────────────────── */
 
@@ -545,30 +365,3 @@ function PlansSection({ currentPlanId }) {
   );
 }
 
-/* ─── Pagination Controls ────────────────────────────────────────────────────── */
-
-function PaginationControls({ meta, onPageChange }) {
-  return (
-    <div className="flex items-center justify-between pt-4 mt-4 border-t border-whisper">
-      <p className="text-[12px] text-warm-gray-300">
-        Page {meta.current_page} of {meta.total_pages} · {meta.total_elements} total
-      </p>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => onPageChange(meta.current_page - 1)}
-          disabled={!meta.has_previous}
-          className="p-1.5 rounded-micro text-warm-gray-500 hover:text-notion-black hover:bg-warm-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        >
-          <ChevronLeft size={16} />
-        </button>
-        <button
-          onClick={() => onPageChange(meta.current_page + 1)}
-          disabled={!meta.has_next}
-          className="p-1.5 rounded-micro text-warm-gray-500 hover:text-notion-black hover:bg-warm-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        >
-          <ChevronRight size={16} />
-        </button>
-      </div>
-    </div>
-  );
-}

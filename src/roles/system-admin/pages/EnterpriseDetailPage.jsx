@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Mail, Building2, UserCircle, Calendar, Hash, Phone, MapPin, Globe, CheckCircle, RefreshCw, Trash2, ShieldAlert, History, ExternalLink, Activity, Zap, Play } from "lucide-react";
+import { ArrowLeft, Mail, Building2, UserCircle, Calendar, Hash, Phone, MapPin, Globe, CheckCircle, RefreshCw, Trash2, ShieldAlert, History, ExternalLink, Activity, Play } from "lucide-react";
 import { toast } from "sonner";
 import { useEnterpriseDetail } from "../hooks/useEnterpriseDetail.js";
 import { useApproveEnterprise } from "../hooks/useApproveEnterprise.js";
@@ -11,7 +11,6 @@ import { useRestoreEnterprise } from "../hooks/useRestoreEnterprise.js";
 import { useEnterpriseStatus } from "../hooks/useEnterpriseStatus.js";
 import { useEnterpriseSubscription } from "../hooks/useEnterpriseSubscription.js";
 import { useCancelSubscription } from "../hooks/useCancelSubscription.js";
-import { useUpdateSubscription } from "../hooks/useUpdateSubscription.js";
 import { useStartTrial } from "../hooks/useStartTrial.js";
 import { useSubscriptionPlans } from "../hooks/useSubscriptionPlans.js";
 import { Card, CardContent, Button, Badge, Skeleton, Modal, Input } from "@/components/ui/index.js";
@@ -34,14 +33,9 @@ export default function EnterpriseDetailPage() {
   const hardDeleteMutation = useHardDeleteEnterprise();
   const restoreMutation = useRestoreEnterprise();
   const cancelSubMutation = useCancelSubscription();
-  const updateSubMutation = useUpdateSubscription();
   const startTrialMutation = useStartTrial();
   const { data: plansData } = useSubscriptionPlans({ limit: 50 });
   const availablePlans = plansData?.data ?? [];
-
-  // Override subscription modal state
-  const [showOverrideModal, setShowOverrideModal] = useState(false);
-  const [overrideForm, setOverrideForm] = useState({ plan_id: "", status: "Active", period_start: "", period_end: "" });
 
   // Start trial modal state
   const [showTrialModal, setShowTrialModal] = useState(false);
@@ -264,19 +258,6 @@ export default function EnterpriseDetailPage() {
                     size="sm" 
                     className="w-full justify-start gap-2"
                     onClick={() => {
-                      setOverrideForm({ plan_id: subscriptionInfo?.plan_id || "", status: subscriptionInfo?.status || "Active", period_start: "", period_end: "" });
-                      setShowOverrideModal(true);
-                    }}
-                  >
-                    <Zap size={14} />
-                    Override Subscription
-                  </Button>
-
-                  <Button 
-                    variant="secondary" 
-                    size="sm" 
-                    className="w-full justify-start gap-2"
-                    onClick={() => {
                       setTrialForm({ plan_id: "", trial_days: "14" });
                       setShowTrialModal(true);
                     }}
@@ -373,69 +354,6 @@ export default function EnterpriseDetailPage() {
           </Card>
         </div>
       </div>
-
-      {/* Override Subscription Modal */}
-      <Modal isOpen={showOverrideModal} onClose={() => setShowOverrideModal(false)} title="Override Subscription">
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              await updateSubMutation.mutateAsync({ enterpriseId: id, data: overrideForm });
-              setShowOverrideModal(false);
-            } catch { /* handled by hook */ }
-          }}
-          className="space-y-4"
-        >
-          <div>
-            <label className="block text-[14px] font-medium text-notion-black mb-1.5">Plan</label>
-            <select
-              value={overrideForm.plan_id}
-              onChange={(e) => setOverrideForm((p) => ({ ...p, plan_id: e.target.value }))}
-              className="w-full border border-[#ddd] rounded-micro px-3.5 py-2 text-[14px] text-notion-black focus:outline-none focus:ring-2 focus:border-notion-blue focus:ring-notion-blue/20 bg-white"
-              required
-            >
-              <option value="">Select a plan…</option>
-              {availablePlans.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} — {p.slug}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[14px] font-medium text-notion-black mb-1.5">Status</label>
-            <select
-              value={overrideForm.status}
-              onChange={(e) => setOverrideForm((p) => ({ ...p, status: e.target.value }))}
-              className="w-full border border-[#ddd] rounded-micro px-3.5 py-2 text-[14px] text-notion-black focus:outline-none focus:ring-2 focus:border-notion-blue focus:ring-notion-blue/20 bg-white"
-            >
-              <option value="Active">Active</option>
-              <option value="Trial">Trial</option>
-              <option value="PastDue">Past Due</option>
-              <option value="Cancelled">Cancelled</option>
-              <option value="Expired">Expired</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Period Start"
-              type="date"
-              value={overrideForm.period_start}
-              onChange={(e) => setOverrideForm((p) => ({ ...p, period_start: e.target.value }))}
-              required
-            />
-            <Input
-              label="Period End"
-              type="date"
-              value={overrideForm.period_end}
-              onChange={(e) => setOverrideForm((p) => ({ ...p, period_end: e.target.value }))}
-              required
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-3 border-t border-whisper">
-            <Button type="button" variant="secondary" onClick={() => setShowOverrideModal(false)}>Cancel</Button>
-            <Button type="submit" isLoading={updateSubMutation.isPending}>Override</Button>
-          </div>
-        </form>
-      </Modal>
 
       {/* Start Trial Modal */}
       <Modal isOpen={showTrialModal} onClose={() => setShowTrialModal(false)} title="Start Free Trial">
