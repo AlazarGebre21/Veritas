@@ -74,27 +74,54 @@ export default function ResultDetailView({ sessionId, onBack, isStaff, passingSc
 
       {activeTab === "result" ? (
         <div className="space-y-6">
-          {/* Summary Card */}
           <Card>
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-notion-black">Candidate Grade Overview</h2>
-                <div className="flex items-center gap-3 mt-2 text-[13px] text-warm-gray-500">
-                  <span className="font-semibold tabular-nums text-notion-black">
-                    {detail.total_awarded_points} / {detail.total_max_points} points
-                  </span>
-                  <span>•</span>
-                  <span>Graded By: {typeof detail.graded_by === 'object' ? (detail.graded_by?.type || 'System') : (detail.graded_by || 'System')}</span>
-                  {detail.is_tampered && <Badge variant="destructive">Tampered</Badge>}
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between gap-6">
+                {/* Candidate Info */}
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-notion-black">Candidate Grade Overview</h2>
+                  {(() => {
+                    const ci = detail.candidate_info;
+                    const name = ci ? `${ci.first_name ?? ""} ${ci.last_name ?? ""}`.trim() : null;
+                    return (
+                      <div className="mt-1.5 text-[13px] text-warm-gray-500 space-y-0.5">
+                        {name && <p className="font-medium text-notion-black text-[14px]">{name}</p>}
+                        {ci?.email && <p className="font-mono">{ci.email}</p>}
+                      </div>
+                    );
+                  })()}
+                  <div className="flex items-center gap-3 mt-3 text-[13px] text-warm-gray-500 flex-wrap">
+                    <span className="font-semibold tabular-nums text-notion-black">
+                      {detail.total_awarded_points} / {detail.total_max_points} pts
+                    </span>
+                    <span>•</span>
+                    {(() => {
+                      const gb = detail.graded_by;
+                      const ud = gb?.user_details;
+                      const graderName = ud ? `${ud.first_name ?? ""} ${ud.last_name ?? ""}`.trim() || ud.email : null;
+                      const graderRole = ud?.role;
+                      const graderEmail = ud?.email;
+                      const fallback = typeof gb === "object" ? (gb?.type || "System") : (gb || "System");
+                      return (
+                        <span>
+                          Graded by: <span className="text-notion-black font-medium">{graderName || fallback}</span>
+                          {graderRole && <span className="ml-1 text-warm-gray-400">({graderRole})</span>}
+                          {graderEmail && graderName && <span className="ml-1 font-mono text-warm-gray-400">{graderEmail}</span>}
+                        </span>
+                      );
+                    })()}
+                    {detail.is_tampered && <Badge variant="destructive">Tampered</Badge>}
+                  </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <p className={`text-4xl font-bold tabular-nums ${passed ? "text-success" : "text-destructive"}`}>
-                  {detail.percentage?.toFixed(1)}%
-                </p>
-                <Badge variant={passed ? "success" : "destructive"} className="mt-2 text-[13px]">
-                  {passed ? "Passed" : "Failed"}
-                </Badge>
+                {/* Score */}
+                <div className="text-right shrink-0">
+                  <p className={`text-4xl font-bold tabular-nums ${passed ? "text-success" : "text-destructive"}`}>
+                    {detail.percentage?.toFixed(1)}%
+                  </p>
+                  <Badge variant={passed ? "success" : "destructive"} className="mt-2 text-[13px]">
+                    {passed ? "Passed" : "Failed"}
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -131,6 +158,7 @@ export default function ResultDetailView({ sessionId, onBack, isStaff, passingSc
                     </div>
                   </div>
                   <div className="px-5 py-4 space-y-4">
+                    {/* Question content */}
                     <div>
                       <p className="text-[13px] text-warm-gray-500 font-medium mb-1">Question Content</p>
                       <p className="text-[15px] text-notion-black leading-relaxed">
@@ -138,21 +166,57 @@ export default function ResultDetailView({ sessionId, onBack, isStaff, passingSc
                         {qr.content || "No detailed content provided."}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-[13px] text-warm-gray-500 font-medium mb-1">Candidate Answer</p>
-                      <div className="bg-warm-white p-3 rounded-md border border-whisper text-[14px] text-notion-black font-mono whitespace-pre-wrap">
-                        {qr.candidate_answer ? (
-                          typeof qr.candidate_answer === "object" 
-                            ? JSON.stringify(qr.candidate_answer, null, 2) 
-                            : qr.candidate_answer
-                        ) : (
-                          <span className="text-warm-gray-400 italic font-sans">No answer provided</span>
-                        )}
+
+                    {/* MCQ / TrueFalse — visual option list */}
+                    {qr.options?.length > 0 ? (
+                      <div>
+                        <p className="text-[13px] text-warm-gray-500 font-medium mb-2">Answer Options</p>
+                        <div className="space-y-1.5">
+                          {qr.options.map((opt) => {
+                            const isCorrect = qr.correct_option_ids?.includes(opt.id);
+                            const isChosen = qr.candidate_answer?.selectedOptionIds?.includes(opt.id);
+                            const isWrong = isChosen && !isCorrect;
+
+                            let rowCls = "border-whisper bg-white text-warm-gray-600";
+                            if (isCorrect) rowCls = "border-success/40 bg-success/5 text-success font-medium";
+                            if (isWrong) rowCls = "border-destructive/40 bg-destructive/5 text-destructive font-medium";
+
+                            return (
+                              <div key={opt.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-micro border ${rowCls}`}>
+                                <span className="text-[14px] flex-1">{opt.content}</span>
+                                <div className="flex items-center gap-1.5 shrink-0 text-[11px]">
+                                  {isChosen && (
+                                    <span className={`font-medium ${ isCorrect ? "text-success" : "text-destructive" }`}>
+                                      Candidate&apos;s answer
+                                    </span>
+                                  )}
+                                  {isCorrect && <CheckCircle size={15} className="text-success" />}
+                                  {isWrong && <XCircle size={15} className="text-destructive" />}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-4 p-3 bg-warm-white/50 rounded-md border border-whisper">
-                      <p className="text-[13px] text-warm-gray-500 font-medium mb-1">Status / Feedback</p>
-                      <p className="text-[14px] text-notion-black">{qr.status || "Graded"}</p>
+                    ) : (
+                      /* Essay / ShortAnswer — show text */
+                      <div>
+                        <p className="text-[13px] text-warm-gray-500 font-medium mb-1">Candidate Answer</p>
+                        <div className="bg-warm-white p-3 rounded-md border border-whisper text-[14px] text-notion-black whitespace-pre-wrap">
+                          {qr.candidate_answer?.text || qr.candidate_answer ? (
+                            typeof qr.candidate_answer === "object"
+                              ? (qr.candidate_answer.text || JSON.stringify(qr.candidate_answer, null, 2))
+                              : qr.candidate_answer
+                          ) : (
+                            <span className="text-warm-gray-400 italic">No answer provided</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-2 p-3 bg-warm-white/50 rounded-md border border-whisper">
+                      <p className="text-[13px] text-warm-gray-500 font-medium mb-1">Status</p>
+                      <p className="text-[14px] text-notion-black capitalize">{qr.status || "Graded"}</p>
                     </div>
                   </div>
                 </div>

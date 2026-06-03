@@ -121,10 +121,19 @@ export default function QuestionDetailPage() {
   // Populate form when editing
   useEffect(() => {
     if (question && !isNew) {
+      let formType = question.type || "MCQ";
+      if (formType === "MCQ" && question.options?.length === 2) {
+        const hasTrue = question.options.some(o => o.content.trim().toLowerCase() === "true");
+        const hasFalse = question.options.some(o => o.content.trim().toLowerCase() === "false");
+        if (hasTrue && hasFalse) {
+          formType = "TrueFalse";
+        }
+      }
+
       reset({
         title: question.title || "",
         content: question.content || "",
-        type: question.type || "MCQ",
+        type: formType,
         difficulty: question.difficulty || "Easy",
         points: question.points || 0,
         topic: question.topic || "",
@@ -186,7 +195,7 @@ export default function QuestionDetailPage() {
     const payload = {
       title: values.title,
       content: values.content,
-      type: values.type,
+      type: values.type === "TrueFalse" ? "MCQ" : values.type,
       difficulty: values.difficulty,
       points: values.points,
       negativePoints: 0,

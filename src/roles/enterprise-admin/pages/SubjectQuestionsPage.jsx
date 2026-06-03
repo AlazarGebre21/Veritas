@@ -21,9 +21,17 @@ const buildColumns = (onDelete) => [
   },
   {
     header: "Type",
-    accessor: (row) => (
-      <Badge variant="info">{TYPE_LABELS[row.type] || row.type}</Badge>
-    ),
+    accessor: (row) => {
+      let displayType = row.type;
+      if (displayType === "MCQ" && row.options?.length === 2) {
+        const hasTrue = row.options.some(o => o.content?.trim().toLowerCase() === "true");
+        const hasFalse = row.options.some(o => o.content?.trim().toLowerCase() === "false");
+        if (hasTrue && hasFalse) {
+          displayType = "TrueFalse";
+        }
+      }
+      return <Badge variant="info">{TYPE_LABELS[displayType] || displayType}</Badge>;
+    },
   },
   {
     header: "Difficulty",

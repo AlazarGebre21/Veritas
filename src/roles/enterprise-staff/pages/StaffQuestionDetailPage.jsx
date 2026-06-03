@@ -137,10 +137,19 @@ export default function StaffQuestionDetailPage() {
   // Populate form when editing
   useEffect(() => {
     if (question && !isNew) {
+      let formType = question.type || "MCQ";
+      if (formType === "MCQ" && question.options?.length === 2) {
+        const hasTrue = question.options.some(o => o.content.trim().toLowerCase() === "true");
+        const hasFalse = question.options.some(o => o.content.trim().toLowerCase() === "false");
+        if (hasTrue && hasFalse) {
+          formType = "TrueFalse";
+        }
+      }
+
       reset({
         title: question.title || "",
         content: question.content || "",
-        type: question.type || "MCQ",
+        type: formType,
         difficulty: question.difficulty || "Easy",
         points: question.points || 0,
         negativePoints: question.negativePoints || 0,
@@ -195,6 +204,9 @@ export default function StaffQuestionDetailPage() {
   // ── Submit ────────────────────────────────────────────────────────────
   function onSubmit(values) {
     const payload = { ...values };
+    if (payload.type === "TrueFalse") {
+      payload.type = "MCQ";
+    }
 
     // Omit optional fields if they are empty strings
     if (payload.topic === "") delete payload.topic;

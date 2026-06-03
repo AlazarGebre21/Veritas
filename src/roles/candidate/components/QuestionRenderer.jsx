@@ -21,8 +21,18 @@ export default function QuestionRenderer({ question, answer, onAnswer, onFlag, i
   }
 
   const questionType = snap.type || snap.questionType || "MCQ";
-  const questionText = snap.content || snap.text || snap.questionText || "";
   const options = snap.options || [];
+  
+  let displayType = questionType;
+  if (questionType === "MCQ" && options.length === 2) {
+    const hasTrue = options.some(o => o.content?.trim().toLowerCase() === "true");
+    const hasFalse = options.some(o => o.content?.trim().toLowerCase() === "false");
+    if (hasTrue && hasFalse) {
+      displayType = "TrueFalse";
+    }
+  }
+
+  const questionText = snap.content || snap.text || snap.questionText || "";
   const points = question.points || 0;
   const negPoints = question.negativePoints || 0;
 
@@ -41,7 +51,7 @@ export default function QuestionRenderer({ question, answer, onAnswer, onFlag, i
               <span className="text-[11px] text-destructive">(-{negPoints})</span>
             )}
             <span className="text-[11px] text-warm-gray-300">•</span>
-            <span className="text-[11px] text-warm-gray-400 capitalize">{questionType}</span>
+            <span className="text-[11px] text-warm-gray-400 capitalize">{displayType === "TrueFalse" ? "True / False" : displayType}</span>
           </div>
           <p className="text-[15px] text-notion-black leading-relaxed">{questionText}</p>
           {snap.mediaUrl && (

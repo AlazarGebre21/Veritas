@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGradingResults, useGradingStatus } from "../hooks/useGrading.js";
+import { useGradingResults, useGradingStatus, useGradingDetail } from "../hooks/useGrading.js";
 import { Badge, Skeleton } from "@/components/ui/index.js";
 import { Trophy } from "lucide-react";
 import ResultDetailView from "../components/ResultDetailView.jsx";
@@ -44,42 +44,59 @@ export function ExamSubmissionsTab({ examId, exam }) {
 
 function SubmissionRow({ sub, passingScore, onClick }) {
   const { data: statusData } = useGradingStatus(sub.session_id);
-  const status = statusData?.status || "graded";
-  const isPending = status === 'pending';
+  // Fetch full detail to get candidate_info + graded_by.user_details (only available on the detail endpoint)
+  const { data: detail } = useGradingDetail(sub.session_id);
+
+  const status = statusData?.status || sub.status || "graded";
+  const isPending = status === "pending";
   const displayPercentage = statusData?.percentage ?? sub.percentage ?? 0;
-  const gradedBy = statusData?.graded_by || sub.graded_by;
-  const gradedByLabel = gradedBy
-    ? typeof gradedBy === 'object'
-      ? gradedBy.type || 'System'
-      : gradedBy
-    : 'System';
+
+  // Candidate — candidate_info only available from detail endpoint
+  const ci = detail?.candidate_info;
+  const candidateName = ci
+    ? `${ci.first_name ?? ""} ${ci.last_name ?? ""}`.trim()
+    : `Candidate ${sub.candidate_id}`;
+  const candidateEmail = ci?.email;
+
+  // Grader — user_details only available from detail endpoint
+  const gb = detail?.graded_by ?? sub.graded_by;
+  const ud = detail?.graded_by?.user_details;
+  const graderName = ud
+    ? `${ud.first_name ?? ""} ${ud.last_name ?? ""}`.trim() || ud.email
+    : null;
+  const graderLabel = graderName || (typeof gb === "object" ? (gb?.type || "System") : (gb || "System"));
+  const graderRole = ud?.role;
+  const graderEmail = ud?.email;
+
   const passed = displayPercentage >= (passingScore || 50);
 
   return (
     <div onClick={onClick} className="flex items-center justify-between px-4 py-3 hover:bg-warm-white/50 transition-colors cursor-pointer">
       <div>
         <div className="flex items-center gap-2">
-          <p className="text-[14px] font-medium text-notion-black">
-            {sub.session?.candidate?.firstName ? `${sub.session.candidate.firstName} ${sub.session.candidate.lastName}` : `Candidate ${sub.candidate_id}`}
-          </p>
-          <Badge variant={isPending ? 'warning' : 'neutral'} className="text-[10px] capitalize">
+          <p className="text-[14px] font-medium text-notion-black">{candidateName}</p>
+          <Badge variant={isPending ? "warning" : "neutral"} className="text-[10px] capitalize">
             {status}
           </Badge>
         </div>
-        <div className="flex items-center gap-3 mt-0.5 text-[11px] text-warm-gray-500">
-          <span>Graded By: {gradedByLabel}</span>
+        <div className="flex items-center gap-3 mt-0.5 text-[11px] text-warm-gray-500 flex-wrap">
+          {candidateEmail && <span className="font-mono">{candidateEmail}</span>}
+          <span>•</span>
+          <span>
+            Graded by: {graderLabel}
+            {graderRole && <span className="ml-1 text-warm-gray-400">({graderRole})</span>}
+            {graderEmail && graderName && <span className="ml-1 font-mono text-warm-gray-400">{graderEmail}</span>}
+          </span>
           {sub.is_tampered && <Badge variant="destructive">Tampered</Badge>}
         </div>
       </div>
       <div className="flex items-center gap-3 shrink-0 ml-3">
         {isPending ? (
-          <div className="text-right text-warm-gray-400 text-[12px] italic">
-            Computing...
-          </div>
+          <div className="text-right text-warm-gray-400 text-[12px] italic">Computing...</div>
         ) : (
           <div className="text-right">
             <p className={`text-[16px] font-bold tabular-nums ${passed ? "text-success" : "text-destructive"}`}>
-               {displayPercentage?.toFixed(1)}%
+              {displayPercentage?.toFixed(1)}%
             </p>
             <Badge variant={passed ? "success" : "destructive"}>{passed ? "Passed" : "Failed"}</Badge>
           </div>
@@ -88,3 +105,4 @@ function SubmissionRow({ sub, passingScore, onClick }) {
     </div>
   );
 }
+

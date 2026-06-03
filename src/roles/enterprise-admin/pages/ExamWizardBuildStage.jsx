@@ -126,6 +126,26 @@ function QuestionsTab({ examId }) {
                 </div>
                 <div className="min-w-0 w-full">
                   <p className="text-[13px] font-medium text-notion-black">{item.question?.content || item.question?.title}</p>
+                  {item.question?.mediaUrl && (
+                    /\.(jpe?g|png|gif|webp|svg|avif)(\?|$)/i.test(item.question.mediaUrl) ? (
+                      <a href={item.question.mediaUrl} target="_blank" rel="noopener noreferrer" className="block mt-2">
+                        <img
+                          src={item.question.mediaUrl}
+                          alt="Question media"
+                          className="max-h-32 max-w-xs rounded border border-whisper object-contain bg-warm-white"
+                        />
+                      </a>
+                    ) : (
+                      <a
+                        href={item.question.mediaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-1.5 text-[12px] text-notion-blue hover:underline truncate max-w-xs"
+                      >
+                        {item.question.mediaUrl}
+                      </a>
+                    )
+                  )}
                   {item.question?.type === "MCQ" && item.question?.options && (
                     <div className="mt-2 space-y-1">
                       {item.question.options.map((opt, i) => (
@@ -181,6 +201,26 @@ function QuestionsTab({ examId }) {
                     )}
                     <div className="min-w-0 w-full">
                       <p className="text-[13px] font-medium text-notion-black">{q.content || q.title}</p>
+                      {q.mediaUrl && (
+                        /\.(jpe?g|png|gif|webp|svg|avif)(\?|$)/i.test(q.mediaUrl) ? (
+                          <a href={q.mediaUrl} target="_blank" rel="noopener noreferrer" className="block mt-2">
+                            <img
+                              src={q.mediaUrl}
+                              alt="Question media"
+                              className="max-h-32 max-w-xs rounded border border-whisper object-contain bg-warm-white"
+                            />
+                          </a>
+                        ) : (
+                          <a
+                            href={q.mediaUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block mt-1.5 text-[12px] text-notion-blue hover:underline truncate max-w-xs"
+                          >
+                            {q.mediaUrl}
+                          </a>
+                        )
+                      )}
                       {q.type === "MCQ" && q.options && (
                         <div className="mt-2 space-y-1">
                           {q.options.map((opt, i) => (
