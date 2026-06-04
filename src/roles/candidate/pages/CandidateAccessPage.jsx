@@ -37,29 +37,22 @@ export default function CandidateAccessPage() {
     rawToken && !codeFromUrl ? "face" : "token"
   );
   const [tokenError, setTokenError] = useState(null);
-  const [autoRedeemed, setAutoRedeemed] = useState(false);
 
   const redeem = useRedeemCode();
   const startSession = useStartSession();
   const { data: activeSession, isSuccess: resumeChecked } = useResumeSession();
 
-  // Auto-redeem code from URL query param (?code=XXXXX)
-  // Clear any stale session first so the new code can be redeemed
-  useEffect(() => {
-    if (codeFromUrl && !autoRedeemed) {
-      setAutoRedeemed(true);
-      // Clear stale session data before redeeming new code
-      clearSession();
-      redeem.mutate(codeFromUrl, {
-        onError: (err) => {
-          setTokenError(
-            err.response?.data?.error || "Invalid or expired invitation code."
-          );
-        },
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [codeFromUrl]);
+  function handleUrlTokenSubmit() {
+    clearSession();
+    setTokenError(null);
+    redeem.mutate(codeFromUrl, {
+      onError: (err) => {
+        setTokenError(
+          err.response?.data?.error || "Invalid or expired invitation code."
+        );
+      },
+    });
+  }
 
   // If we already have a sessionId, go straight to the exam
   useEffect(() => {
@@ -118,10 +111,27 @@ export default function CandidateAccessPage() {
                 <span className="text-[60px] md:text-[80px] font-black tracking-[0.3em] text-notion-black">VERITAS</span>
               </div>
             </div>
-            <div className="relative z-10 flex flex-col items-center gap-4">
-              <Loader2 size={32} className="animate-spin text-notion-blue" />
-              <p className="text-[15px] font-medium text-notion-black">Verifying invitation code...</p>
-              {tokenError && <p className="text-[13px] text-destructive px-4 py-2 bg-destructive/10 rounded-subtle">{tokenError}</p>}
+            <div className="relative z-10 flex flex-col items-center gap-4 text-center">
+              {redeem.isPending ? (
+                <>
+                  <Loader2 size={32} className="animate-spin text-notion-blue" />
+                  <p className="text-[15px] font-medium text-notion-black">Verifying invitation code...</p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-[20px] font-bold text-notion-black mb-1">Welcome to Veritas</h2>
+                  <p className="text-[14px] text-warm-gray-500 mb-4 max-w-[280px]">
+                    Click the button below to verify your invitation and begin the exam process.
+                  </p>
+                  <button
+                    onClick={handleUrlTokenSubmit}
+                    className="px-6 py-2.5 text-[14px] font-medium text-white bg-notion-blue rounded-subtle hover:bg-active-blue transition-colors shadow-sm w-full"
+                  >
+                    Verify Invitation
+                  </button>
+                </>
+              )}
+              {tokenError && <p className="text-[13px] text-destructive px-4 py-2 bg-destructive/10 rounded-subtle mt-2">{tokenError}</p>}
             </div>
           </div>
         )}

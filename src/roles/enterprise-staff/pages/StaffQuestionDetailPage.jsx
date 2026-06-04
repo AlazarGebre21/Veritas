@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,7 +11,6 @@ import {
   Circle,
   Upload,
   FileImage,
-  X,
   AlertCircle,
 } from "lucide-react";
 import { useQuestion, useCreateQuestion, useUpdateQuestion, useUploadQuestionMedia } from "../hooks/useStaffQuestions.js";
@@ -23,20 +22,12 @@ import { ROUTES } from "@/config/routes.js";
 const questionSchema = z.object({
   title: z.string().min(1, "Subject is required"),
   content: z.string().min(1, "Question content is required"),
-  type: z.enum(["MCQ", "TrueFalse", "ShortAnswer", "Essay"]),
+  type: z.enum(["MCQ", "TrueFalse", "ShortAnswer"]),
   difficulty: z.enum(["Easy", "Medium", "Hard"]),
   points: z.coerce.number().min(0, "Must be >= 0"),
-  negativePoints: z.coerce.number().min(0).optional().default(0),
-  topic: z.string().optional().default(""),
-  mediaUrl: z.string().optional().default(""),
+  topic: z.string().min(1, "Topic is required"),
+  expectedAnswer: z.string().optional().default(""),
   isActive: z.boolean().optional().default(true),
-  metadata: z.object({
-    gradeField: z.string().optional().default(""),
-    course: z.string().optional().default(""),
-    chapter: z.string().optional().default(""),
-    tags: z.string().optional().default(""),
-    examYear: z.string().optional().default(""),
-  }).optional(),
 });
 
 
@@ -44,7 +35,6 @@ const TYPES = [
   { value: "MCQ", label: "Multiple Choice" },
   { value: "TrueFalse", label: "True / False" },
   { value: "ShortAnswer", label: "Short Answer" },
-  { value: "Essay", label: "Essay" },
 ];
 
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
@@ -52,7 +42,9 @@ const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 export default function StaffQuestionDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isNew = id === "new";
+  const defaultSubject = searchParams.get("subject") || "";
 
   // Fetch existing question
   const { data: question, isLoading } = useQuestion(isNew ? null : id);
@@ -74,37 +66,28 @@ export default function StaffQuestionDetailPage() {
     handleSubmit,
     watch,
     reset,
-    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(questionSchema),
     defaultValues: {
-      title: "",
+      title: defaultSubject,
       content: "",
       type: "MCQ",
       difficulty: "Easy",
       points: 1,
-      negativePoints: 0,
       topic: "",
-      mediaUrl: "",
+      expectedAnswer: "",
       isActive: true,
-      metadata: {
-        gradeField: "",
-        course: "",
-        chapter: "",
-        tags: "",
-        examYear: "",
-      },
     },
   });
 
   const questionType = watch("type");
-  const watchedMediaUrl = watch("mediaUrl");
   const needsOptions = questionType === "MCQ" || questionType === "TrueFalse";
 
   // ── Media upload refs / state ─────────────────────────────────────────
   const mediaFileRef = useRef(null);
   const [mediaDragOver, setMediaDragOver] = useState(false);
+  const [mediaLink, setMediaLink] = useState("");
 
   function handleMediaFile(file) {
     if (!file) return;
@@ -122,7 +105,7 @@ export default function StaffQuestionDetailPage() {
       {
         onSuccess: (res) => {
           const url = res?.mediaUrl ?? res?.data?.mediaUrl ?? "";
-          if (url) setValue("mediaUrl", url);
+          if (url) setMediaLink(url);
         },
       }
     );
@@ -152,18 +135,13 @@ export default function StaffQuestionDetailPage() {
         type: formType,
         difficulty: question.difficulty || "Easy",
         points: question.points || 0,
-        negativePoints: question.negativePoints || 0,
         topic: question.topic || "",
-        mediaUrl: question.mediaUrl || "",
+        expectedAnswer: question.expectedAnswer || "",
         isActive: question.isActive ?? true,
-        metadata: {
-          gradeField: question.metadata?.gradeField || "",
-          course: question.metadata?.course || "",
-          chapter: question.metadata?.chapter || "",
-          tags: question.metadata?.tags || "",
-          examYear: question.metadata?.examYear || "",
-        },
       });
+      if (question.mediaUrl) {
+        setMediaLink(question.mediaUrl);
+      }
       if (question.options?.length) {
         setOptions(question.options.map((o) => ({ content: o.content, isCorrect: o.isCorrect })));
       }
@@ -201,38 +179,55 @@ export default function StaffQuestionDetailPage() {
     );
   }
 
+  function handleBack() {
+    const titleVal = watch("title") || question?.title;
+    if (titleVal) {
+      navigate(ROUTES.STAFF_QUESTIONS_SUBJECT.replace(":subjectName", encodeURIComponent(titleVal)));
+    } else {
+      navigate(ROUTES.STAFF_QUESTIONS);
+    }
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────
   function onSubmit(values) {
-    const payload = { ...values };
-    if (payload.type === "TrueFalse") {
-      payload.type = "MCQ";
+    const payload = {
+      title: values.title,
+      content: values.content,
+      type: values.type === "TrueFalse" ? "MCQ" : values.type,
+      difficulty: values.difficulty,
+      points: values.points,
+      negativePoints: 0,
+      topic: values.topic,
+      isActive: values.isActive,
+      ...(mediaLink ? { mediaUrl: mediaLink } : {}),
+    };
+
+    // expectedAnswer only for ShortAnswer
+    if (values.type === "ShortAnswer" && values.expectedAnswer?.trim()) {
+      payload.expectedAnswer = values.expectedAnswer.trim();
     }
 
-    // Omit optional fields if they are empty strings
-    if (payload.topic === "") delete payload.topic;
-    if (payload.mediaUrl === "") delete payload.mediaUrl;
-
-    // Ensure options is always an array
+    // Options only for MCQ / TrueFalse
     if (needsOptions) {
       payload.options = options.filter((o) => o.content.trim());
-    } else {
-      payload.options = [];
     }
-
-    // Ensure metadata is at least an empty object and omit empty strings
-    payload.metadata = payload.metadata || {};
-    Object.keys(payload.metadata).forEach((key) => {
-      if (!payload.metadata[key]) delete payload.metadata[key];
-    });
 
     if (isNew) {
       createQuestion.mutate(payload, {
-        onSuccess: () => navigate(ROUTES.STAFF_QUESTIONS),
+        onSuccess: () => {
+          const subject = values.title ? encodeURIComponent(values.title) : "";
+          navigate(subject ? ROUTES.STAFF_QUESTIONS_SUBJECT.replace(":subjectName", subject) : ROUTES.STAFF_QUESTIONS);
+        },
       });
     } else {
       updateQuestion.mutate(
         { id, payload },
-        { onSuccess: () => navigate(ROUTES.STAFF_QUESTIONS) }
+        { 
+          onSuccess: () => {
+            const subject = values.title ? encodeURIComponent(values.title) : "";
+            navigate(subject ? ROUTES.STAFF_QUESTIONS_SUBJECT.replace(":subjectName", subject) : ROUTES.STAFF_QUESTIONS);
+          }
+        }
       );
     }
   }
@@ -250,10 +245,10 @@ export default function StaffQuestionDetailPage() {
     <div className="space-y-6">
       {/* Back link */}
       <button
-        onClick={() => navigate(ROUTES.STAFF_QUESTIONS)}
+        onClick={handleBack}
         className="flex items-center gap-1.5 text-[14px] text-warm-gray-500 hover:text-notion-black transition-colors"
       >
-        <ArrowLeft size={16} /> Back to Question Bank
+        <ArrowLeft size={16} /> Back to Subject
       </button>
 
       {/* Header */}
@@ -331,22 +326,28 @@ export default function StaffQuestionDetailPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Points"
-                    id="q-points"
-                    type="number"
-                    min={0}
-                    error={errors.points?.message}
-                    {...register("points")}
-                  />
-                  <Input
-                    label="Negative Points"
-                    id="q-neg"
-                    type="number"
-                    min={0}
-                    {...register("negativePoints")}
-                  />
+                <Input
+                  label="Points"
+                  id="q-points"
+                  type="number"
+                  min={0}
+                  error={errors.points?.message}
+                  {...register("points")}
+                />
+
+                <Input
+                  label="Topic"
+                  id="q-topic"
+                  placeholder="e.g. Algebra"
+                  error={errors.topic?.message}
+                  {...register("topic")}
+                />
+                
+                <div className="pt-2">
+                  <label className="flex items-center gap-2 cursor-pointer w-fit group" title="Inactive questions will not be in exams">
+                    <input type="checkbox" {...register("isActive")} className="w-4 h-4 rounded border-[#ddd] text-notion-blue focus:ring-notion-blue/20" />
+                    <span className="text-[14px] text-notion-black font-medium">Active Status</span>
+                  </label>
                 </div>
               </CardContent>
             </Card>
@@ -424,52 +425,75 @@ export default function StaffQuestionDetailPage() {
               </Card>
             )}
 
-            {/* Metadata / Additional Details */}
+            {/* Expected Answer Editor (ShortAnswer) */}
+            {questionType === "ShortAnswer" && (
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  <h3 className="text-[16px] font-semibold text-notion-black">Expected Answer</h3>
+                  <p className="text-[13px] text-warm-gray-500 -mt-2">
+                    Provide the expected answer.
+                  </p>
+                  <div>
+                    <textarea
+                      id="q-expected"
+                      rows={4}
+                      placeholder="Enter the expected correct answer..."
+                      className="w-full border border-[#ddd] rounded-micro px-3.5 py-2.5 text-[14px] text-notion-black focus:outline-none focus:border-notion-blue focus:ring-2 focus:ring-notion-blue/20 transition-all resize-y placeholder:text-warm-gray-300"
+                      {...register("expectedAnswer")}
+                    />
+                    {errors.expectedAnswer && (
+                      <p className="text-warning text-[12px] mt-1">{errors.expectedAnswer.message}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Media Upload */}
             <Card>
               <CardContent className="p-6 space-y-4">
-                <h3 className="text-[16px] font-semibold text-notion-black">Additional Details</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[16px] font-semibold text-notion-black">Media</h3>
+                  {isNew && (
+                    <Badge variant="neutral">Save/Create first to upload</Badge>
+                  )}
+                </div>
+                <p className="text-[13px] text-warm-gray-500 -mt-2">
+                  Upload an image, video, or PDF. Max 5MB.
+                </p>
 
-                <Input
-                  label="Topic (optional)"
-                  id="q-topic"
-                  placeholder="e.g. Algebra"
-                  {...register("topic")}
-                />
-
-                {/* ── Media upload / URL ──────────────────────────────── */}
                 {isNew ? (
-                  <Input
-                    label="Media URL (optional)"
-                    id="q-media"
-                    placeholder="https://..."
-                    {...register("mediaUrl")}
-                  />
+                  <div className="border-2 border-dashed rounded-micro p-5 text-center border-whisper bg-warm-white/50">
+                    <Upload size={20} className="mx-auto text-warm-gray-300 mb-2 opacity-50" />
+                    <p className="text-[13px] text-warm-gray-500">
+                      You must save/create the question first before uploading media.
+                    </p>
+                  </div>
                 ) : (
-                  <div>
-                    <label className="block text-[14px] font-medium text-notion-black mb-1.5">
-                      Media (optional)
-                    </label>
-
-                    {/* Current media preview */}
-                    {watchedMediaUrl && (
-                      <div className="mb-3 flex items-center gap-2 p-2.5 rounded-micro border border-whisper bg-warm-white/60">
-                        <FileImage size={15} className="text-notion-blue shrink-0" />
-                        <a
-                          href={watchedMediaUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[12px] text-notion-blue hover:underline truncate flex-1"
-                        >
-                          {watchedMediaUrl}
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => setValue("mediaUrl", "")}
-                          className="p-0.5 text-warm-gray-300 hover:text-destructive transition-colors shrink-0"
-                          title="Remove media"
-                        >
-                          <X size={13} />
-                        </button>
+                  <>
+                    {mediaLink && (
+                      <div className="mb-3 rounded-micro border border-whisper overflow-hidden bg-warm-white/60">
+                        {/\.(jpe?g|png|gif|webp|svg|avif)(\?|$)/i.test(mediaLink) ? (
+                          <a href={mediaLink} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={mediaLink}
+                              alt="Question media"
+                              className="w-full max-h-52 object-contain bg-warm-white"
+                            />
+                          </a>
+                        ) : (
+                          <div className="flex items-center gap-2 p-2.5">
+                            <FileImage size={15} className="text-notion-blue shrink-0" />
+                            <a
+                              href={mediaLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[12px] text-notion-blue hover:underline truncate flex-1"
+                            >
+                              {mediaLink}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -519,56 +543,8 @@ export default function StaffQuestionDetailPage() {
                         <CheckCircle2 size={12} /> Media uploaded successfully.
                       </p>
                     )}
-
-                    {/* Hidden field keeps the URL in the form payload */}
-                    <input type="hidden" {...register("mediaUrl")} />
-                  </div>
+                  </>
                 )}
-
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-whisper mt-2">
-                  <Input
-                    label="Grade/Field"
-                    id="q-meta-grade"
-                    placeholder="e.g. 12"
-                    {...register("metadata.gradeField")}
-                  />
-                  <Input
-                    label="Course"
-                    id="q-meta-course"
-                    placeholder="e.g. Physics"
-                    {...register("metadata.course")}
-                  />
-                  <Input
-                    label="Chapter"
-                    id="q-meta-chapter"
-                    placeholder="e.g. Electricity"
-                    {...register("metadata.chapter")}
-                  />
-                  <Input
-                    label="Exam Year"
-                    id="q-meta-year"
-                    placeholder="e.g. 2022"
-                    {...register("metadata.examYear")}
-                  />
-                </div>
-
-                <Input
-                  label="Tags"
-                  id="q-meta-tags"
-                  placeholder="e.g. conceptual"
-                  {...register("metadata.tags")}
-                />
-
-                <div className="pt-4 border-t border-whisper mt-2">
-                  {/* Active toggle */}
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" {...register("isActive")} className="w-4 h-4 rounded border-[#ddd] text-notion-blue focus:ring-notion-blue/20" />
-                    <span className="text-[14px] text-notion-black font-medium">Active Status</span>
-                  </label>
-                  <p className="text-[12px] text-warm-gray-500 mt-1">
-                    Inactive questions will not appear in exams.
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -582,7 +558,7 @@ export default function StaffQuestionDetailPage() {
         )}
 
         <div className="flex items-center justify-end gap-3 border-t border-whisper pt-5">
-          <Button type="button" variant="secondary" onClick={() => navigate(ROUTES.STAFF_QUESTIONS)}>
+          <Button type="button" variant="secondary" onClick={handleBack}>
             Cancel
           </Button>
           <Button type="submit" disabled={saving}>

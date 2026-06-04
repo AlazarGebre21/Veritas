@@ -286,6 +286,15 @@ function BrandingTab({ enterprise, enterpriseId }) {
     setFontFamily(enterprise?.settings?.fontFamily || DEFAULTS.fontFamily);
   }
 
+  function handleRevertToOriginal() {
+    setPrimaryColor(DEFAULTS.primaryColor);
+    setSecondaryColor(DEFAULTS.secondaryColor);
+    setBgColor(DEFAULTS.bgColor);
+    setSidebarColor(DEFAULTS.sidebarColor);
+    setTextColor(DEFAULTS.textColor);
+    setFontFamily(DEFAULTS.fontFamily);
+  }
+
   function applyPreset(preset) {
     setPrimaryColor(preset.primary);
     setSecondaryColor(preset.secondary);
@@ -335,6 +344,19 @@ function BrandingTab({ enterprise, enterpriseId }) {
   return (
     <div className="space-y-6">
       <Toast toast={toast} />
+
+      {/* ── Revert Brand ───────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between p-4 rounded-standard border border-whisper bg-warm-white">
+        <div>
+          <h2 className="text-[14px] font-medium text-notion-black">Original Brand</h2>
+          <p className="text-[13px] text-warm-gray-500 mt-0.5">
+            Reset all your customized colors and fonts back to the default brand.
+          </p>
+        </div>
+        <Button variant="outline" onClick={handleRevertToOriginal} leftIcon={<RotateCcw size={15} />}>
+          Revert to Original
+        </Button>
+      </div>
 
       {/* ── Logo Upload Card ───────────────────────────────────────────────── */}
       <Card>

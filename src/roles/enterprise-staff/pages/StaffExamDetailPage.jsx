@@ -93,7 +93,7 @@ export default function StaffExamDetailPage() {
         {activeTab === "Overview" && <OverviewTab exam={exam} />}
         {activeTab === "Questions" && <QuestionsTab examId={id} />}
         {activeTab === "Enrollments" && <EnrollmentsTab exam={exam} />}
-        {activeTab === "Submissions" && <StaffExamSubmissionsTab examId={id} />}
+        {activeTab === "Submissions" && <StaffExamSubmissionsTab examId={id} exam={exam} />}
       </div>
     </div>
   );
@@ -154,16 +154,17 @@ function OverviewTab({ exam }) {
   );
 }
 
-// ── Questions Tab (read-only) ─────────────────────────────────────────────
+// ── Questions Tab (read-only, matches admin detail view) ──────────────────
 function QuestionsTab({ examId }) {
-  const { data, isLoading } = useExamQuestions(examId, { limit: 100, with_correct_answer: false });
+  const { data, isLoading } = useExamQuestions(examId, { limit: 100, with_correct_answer: true });
   const questions = data?.data || [];
+  const sorted = [...questions].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
 
   if (isLoading) {
     return <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div>;
   }
 
-  if (questions.length === 0) {
+  if (sorted.length === 0) {
     return (
       <p className="text-center text-[13px] text-warm-gray-500 py-10 border border-dashed border-whisper rounded-comfortable">
         No questions attached to this exam.
@@ -172,27 +173,59 @@ function QuestionsTab({ examId }) {
   }
 
   return (
-    <div className="border border-whisper rounded-comfortable overflow-hidden divide-y divide-whisper">
-      {questions.map((q, i) => {
-        const question = q.question || q;
-        return (
-          <div key={q.id || i} className="px-5 py-3.5 hover:bg-warm-white/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <p className="text-[14px] font-medium text-notion-black">
-                  {q.orderIndex != null ? `${q.orderIndex + 1}. ` : `${i + 1}. `}
-                  {question.title || question.content?.slice(0, 80) || "Untitled"}
-                </p>
-                <div className="flex items-center gap-3 mt-0.5 text-[11px] text-warm-gray-500">
-                  <Badge variant="neutral">{question.type || "—"}</Badge>
-                  <Badge variant="neutral">{question.difficulty || "—"}</Badge>
-                  <span>{q.pointsOverride ?? question.points ?? 0} pts</span>
-                </div>
+    <div className="space-y-2">
+      <p className="text-[12px] text-warm-gray-500">
+        {sorted.length} question{sorted.length !== 1 ? "s" : ""}
+      </p>
+      {sorted.map((item, index) => (
+        <div key={item.id} className="flex items-start gap-4 p-3 border border-whisper rounded-micro bg-white hover:bg-warm-white/50 transition-colors">
+          <div className="shrink-0 w-6 h-6 mt-0.5 rounded-full bg-warm-gray-200 text-warm-gray-600 flex items-center justify-center text-[12px] font-semibold">
+            {item.orderIndex ?? index + 1}
+          </div>
+          <div className="min-w-0 w-full">
+            <p className="text-[14px] font-medium text-notion-black">
+              {item.question?.content || item.question?.title}
+            </p>
+            {item.question?.mediaUrl && (
+              /\.(jpe?g|png|gif|webp|svg|avif)(\?|$)/i.test(item.question.mediaUrl) ? (
+                <a href={item.question.mediaUrl} target="_blank" rel="noopener noreferrer" className="block mt-2">
+                  <img
+                    src={item.question.mediaUrl}
+                    alt="Question media"
+                    className="max-h-40 max-w-xs rounded border border-whisper object-contain bg-warm-white"
+                  />
+                </a>
+              ) : (
+                <a
+                  href={item.question.mediaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-1.5 text-[12px] text-notion-blue hover:underline truncate max-w-xs"
+                >
+                  {item.question.mediaUrl}
+                </a>
+              )
+            )}
+            {item.question?.type === "MCQ" && item.question?.options && (
+              <div className="mt-2 space-y-1">
+                {item.question.options.map((opt, i) => (
+                  <div key={i} className={`text-[12px] flex items-center gap-2 ${opt.isCorrect ? "text-success font-medium" : "text-warm-gray-500"}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.isCorrect ? "bg-success" : "bg-warm-gray-300"}`} />
+                    {opt.content}
+                  </div>
+                ))}
               </div>
+            )}
+            <div className="flex gap-1.5 mt-2">
+              <Badge variant="info">{item.question?.type}</Badge>
+              <Badge variant="neutral">{item.question?.difficulty}</Badge>
+              <span className="text-[11px] text-warm-gray-500 font-medium bg-warm-white px-1.5 py-0.5 rounded-micro border border-whisper">
+                {item.pointsOverride ?? item.question?.points} pts
+              </span>
             </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }

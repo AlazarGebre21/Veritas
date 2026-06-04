@@ -119,7 +119,7 @@ export default function StaffSubjectQuestionsPage() {
             Questions categorized under this subject.
           </p>
         </div>
-        <Button onClick={() => navigate(ROUTES.STAFF_QUESTION_DETAIL.replace(":id", "new"))}>
+        <Button onClick={() => navigate(`${ROUTES.STAFF_QUESTION_DETAIL.replace(":id", "new")}?subject=${encodeURIComponent(decodedSubject)}`)}>
           <Plus size={16} className="mr-2" />
           Create Question
         </Button>

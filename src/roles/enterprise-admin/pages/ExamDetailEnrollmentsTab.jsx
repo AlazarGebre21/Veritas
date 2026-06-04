@@ -29,6 +29,7 @@ export function ExamEnrollmentsTab({ examId, exam }) {
   const { data: candData, isLoading: candLoading } = useCandidates({ limit: 1000 });
   const allCandidates = candData?.data || [];
 
+  console.log(enrollments)
 
   // Client-side filter
   const filteredCandidates = useMemo(() => {
@@ -135,6 +136,7 @@ export function ExamEnrollmentsTab({ examId, exam }) {
       ) : (
         <div className="border border-whisper rounded-comfortable overflow-hidden divide-y divide-whisper">
           {enrollments.map((e) => {
+            console.log(e.id)
             const candidate = allCandidates.find((c) => c.id === e.candidateId);
             return (
               <div key={e.id} className="flex items-center justify-between px-4 py-3.5 hover:bg-warm-white/50 transition-colors">

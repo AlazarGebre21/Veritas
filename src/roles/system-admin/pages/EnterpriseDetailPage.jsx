@@ -6,11 +6,9 @@ import { useEnterpriseDetail } from "../hooks/useEnterpriseDetail.js";
 import { useApproveEnterprise } from "../hooks/useApproveEnterprise.js";
 import { useReactivateEnterprise } from "../hooks/useReactivateEnterprise.js";
 import { useSoftDeleteEnterprise } from "../hooks/useSoftDeleteEnterprise.js";
-import { useHardDeleteEnterprise } from "../hooks/useHardDeleteEnterprise.js";
 import { useRestoreEnterprise } from "../hooks/useRestoreEnterprise.js";
 import { useEnterpriseStatus } from "../hooks/useEnterpriseStatus.js";
 import { useEnterpriseSubscription } from "../hooks/useEnterpriseSubscription.js";
-import { useCancelSubscription } from "../hooks/useCancelSubscription.js";
 import { useStartTrial } from "../hooks/useStartTrial.js";
 import { useSubscriptionPlans } from "../hooks/useSubscriptionPlans.js";
 import { Card, CardContent, Button, Badge, Skeleton, Modal, Input } from "@/components/ui/index.js";
@@ -30,9 +28,7 @@ export default function EnterpriseDetailPage() {
   const approveMutation = useApproveEnterprise();
   const reactivateMutation = useReactivateEnterprise();
   const softDeleteMutation = useSoftDeleteEnterprise();
-  const hardDeleteMutation = useHardDeleteEnterprise();
   const restoreMutation = useRestoreEnterprise();
-  const cancelSubMutation = useCancelSubscription();
   const startTrialMutation = useStartTrial();
   const { data: plansData } = useSubscriptionPlans({ limit: 50 });
   const availablePlans = plansData?.data ?? [];
@@ -265,18 +261,6 @@ export default function EnterpriseDetailPage() {
                     <Play size={14} />
                     Start Trial
                   </Button>
-
-                  <Button 
-                    className="w-full justify-start gap-2 bg-white border border-destructive/20 text-warm-gray-500 hover:text-destructive hover:bg-destructive-bg hover:border-destructive/40 transition-all whitespace-nowrap text-[13px]"
-                    onClick={() => {
-                      if (!window.confirm("Are you sure you want to cancel this subscription?")) return;
-                      cancelSubMutation.mutate({ enterpriseId: id, cancelAtPeriodEnd: true });
-                    }}
-                    isLoading={cancelSubMutation.isPending}
-                  >
-                    <Trash2 size={14} />
-                    Cancel Subscription
-                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -337,17 +321,8 @@ export default function EnterpriseDetailPage() {
                   </Button>
                 )}
 
-                <Button 
-                  className="w-full justify-start gap-2 bg-destructive text-white border-0 hover:bg-red-500" 
-                  onClick={() => handleAction(hardDeleteMutation, "Permanent Delete", "WARNING: This action is irreversible. All enterprise data will be permanently deleted. Are you absolutely sure?")}
-                  isLoading={hardDeleteMutation.isPending}
-                >
-                  <Trash2 size={16} />
-                  Permanent Delete
-                </Button>
-
                 <p className="text-[11px] text-warm-gray-400 mt-4 leading-relaxed">
-                  Actions in this column are high-risk. Soft deletion preserves data for recovery, while permanent deletion wipes all workspace data immediately.
+                  Actions in this hover are high-risk. Soft deletion preserves data for recovery.
                 </p>
               </div>
             </CardContent>

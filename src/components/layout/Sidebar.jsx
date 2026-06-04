@@ -13,8 +13,10 @@ import {
   ChevronRight,
   LogOut,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/authStore.js";
 import { useUiStore } from "@/stores/uiStore.js";
+import { authApi } from "@/lib/api/auth.api.js";
 import { useMyEnterprise } from "@/roles/enterprise-admin/hooks/useMyEnterprise.js";
 import { USER_ROLES } from "@/config/constants.js";
 import { ROUTES } from "@/config/routes.js";
@@ -60,9 +62,22 @@ export default function Sidebar() {
   const brandName = (isAdmin && enterprise?.displayName) || "Veritas";
 
   const navItems = NAV_ITEMS[user?.role] ?? [];
+  const queryClient = useQueryClient();
 
-  function handleLogout() {
+  async function handleLogout() {
+    // 1. Invalidate the refresh token on the backend (best-effort)
+    const refreshToken = useAuthStore.getState().refreshToken;
+    if (refreshToken) {
+      authApi.logout({ refreshToken }).catch(() => {});
+    }
+
+    // 2. Clear all React Query cache so no stale data leaks to the next user
+    queryClient.clear();
+
+    // 3. Clear auth state (tokens + user from Zustand/localStorage)
     clearAuth();
+
+    // 4. Redirect to login
     navigate(ROUTES.LOGIN, { replace: true });
   }
 

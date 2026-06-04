@@ -39,6 +39,7 @@ export const useAuthStore = create()(
         const decoded = jwtDecode(access);
         const user = {
           ...decoded,
+          id: decoded.id || decoded.sub,
           firstName: decoded.firstName || decoded.first_name,
           lastName: decoded.lastName || decoded.last_name,
           enterpriseId: decoded.enterpriseId || decoded.enterprise_id,
@@ -64,3 +65,32 @@ export const useAuthStore = create()(
     { name: "veritas-auth" }
   )
 );
+
+// ── Cross-tab synchronization ────────────────────────────────────────────────
+// When another tab writes to localStorage under "veritas-auth",
+// rehydrate this tab's in-memory Zustand state so stale tokens
+// cannot overwrite the freshly logged-in user via a 401 refresh race.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== "veritas-auth") return;
+
+    if (!e.newValue) {
+      // Another tab cleared auth (logout)
+      useAuthStore.getState().clearAuth();
+      return;
+    }
+
+    try {
+      const { state } = JSON.parse(e.newValue);
+      if (state) {
+        useAuthStore.setState({
+          accessToken: state.accessToken ?? null,
+          refreshToken: state.refreshToken ?? null,
+          user: state.user ?? null,
+        });
+      }
+    } catch {
+      // Malformed storage value — ignore
+    }
+  });
+}

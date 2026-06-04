@@ -33,7 +33,7 @@ export function useUpdateBranding(enterpriseId) {
 export function useUpdateSettings(enterpriseId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (settings) => enterpriseApi.update(enterpriseId, { settings }),
+    mutationFn: (settings) => enterpriseApi.updateSettings(enterpriseId, settings),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["enterprises", "me"] });
     },

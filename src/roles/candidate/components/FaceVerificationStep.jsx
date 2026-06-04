@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Camera, RotateCcw, Loader2, VideoOff } from "lucide-react";
+import { Camera, RotateCcw, Loader2, VideoOff, AlertTriangle } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -117,9 +117,23 @@ export default function FaceVerificationStep({ onCapture, isLoading }) {
           <h2 className="text-[20px] font-bold text-notion-black leading-tight">
             Face Registration
           </h2>
-          <p className="text-[14px] text-warm-gray-500 mt-1.5">
+          <p className="text-[14px] text-warm-gray-500 mt-1.5 mb-4">
             Take a clear photo of your face for identity verification.
           </p>
+
+          <div className="bg-warning/10 border border-warning/20 rounded-subtle p-3 text-left">
+            <h3 className="text-[13px] font-bold text-warning flex items-center gap-1.5 mb-1.5">
+              <AlertTriangle size={15} /> Strict Proctoring Enabled
+            </h3>
+            <ul className="text-[12px] text-warm-gray-600 list-disc list-inside space-y-1 ml-1">
+              <li>Do not switch tabs or minimize the window.</li>
+              <li>Ensure your face remains clearly visible in the camera frame.</li>
+              <li>Suspicious activity will be flagged and may void your exam.</li>
+              <li>Do not wear hats, sunglasses, or face coverings that obscure your features.</li>
+              <li>Ensure you are in a well-lit area for clear facial recognition.</li>
+              <li>If you violate the above rules and continue on your behaviour your session might be terminated.</li>
+            </ul>
+          </div>
         </div>
 
       {/* Camera / Preview area */}

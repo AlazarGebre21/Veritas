@@ -1,4 +1,6 @@
+import { useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCandidateResult } from "../hooks/useCandidateResult.js";
 import { useExamSessionStore } from "@/stores/examSessionStore.js";
 import { Skeleton } from "@/components/ui/index.js";
@@ -11,15 +13,33 @@ import { CheckCircle2, Clock, LogOut } from "lucide-react";
 export default function CandidateResultsPage() {
   const { sessionId } = useParams();
   const clearSession = useExamSessionStore((s) => s.clearSession);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useCandidateResult(sessionId);
   const session = data?.data;
   const submission = session?.submission;
 
-  function handleExit() {
+  const handleExit = useCallback(() => {
     clearSession();
+    queryClient.clear();
+    // Modern browsers block window.close() if the tab wasn't opened by a script.
+    // Try to close it first:
     window.close();
-  }
+    // Fallback: If it's still open after 300ms, redirect to the main app URL
+    setTimeout(() => {
+      window.location.href = "https://veritas-ai-enhanced-online-examinat.vercel.app";
+    }, 300);
+  }, [clearSession, queryClient]);
+
+  useEffect(() => {
+    if (!isLoading && !isError && session) {
+      // Auto-close/exit after 1 minute (60,000 ms) buffer time
+      const timer = setTimeout(() => {
+        handleExit();
+      }, 60000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isError, session, handleExit]);
 
   if (isLoading) {
     return (
@@ -46,7 +66,7 @@ export default function CandidateResultsPage() {
             onClick={handleExit}
             className="px-5 py-2 text-[14px] font-medium text-white bg-notion-blue rounded-subtle hover:bg-active-blue transition-colors"
           >
-            Return to Home
+            Exit
           </button>
         </div>
       </div>

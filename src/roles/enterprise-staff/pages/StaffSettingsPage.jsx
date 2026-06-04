@@ -73,7 +73,7 @@ export default function StaffSettingsPage() {
 
 function ProfileTab({ user }) {
   const enterpriseId = user?.enterpriseId;
-  const userId = user?.id;
+  const userId = user?.id || user?.sub;
   const updateProfile = useUpdateMyProfile(enterpriseId);
   const { data: profileResponse, isLoading } = useMyProfile(enterpriseId, userId);
   const profile = profileResponse?.data || user;
@@ -216,7 +216,7 @@ function ProfileTab({ user }) {
 
 function PasswordTab({ user }) {
   const enterpriseId = user?.enterpriseId;
-  const userId = user?.id;
+  const userId = user?.id || user?.sub;
   const changePassword = useChangeMyPassword(enterpriseId);
   const [toast, setToast] = useState(null);
 
